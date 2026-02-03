@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * ACL for Bookurier.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Magento_Sales::sales">
+                    <resource id="Bookurier_Shipping::bookurier" title="Bookurier" sortOrder="90">
+                    <resource id="Bookurier_Shipping::awb_create" title="Create Bookurier AWB" />
+                        <resource id="Bookurier_Shipping::awb_print" title="Print AWB" />
+                        <resource id="Bookurier_Shipping::tracking_view" title="View Tracking" />
+                    </resource>
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>

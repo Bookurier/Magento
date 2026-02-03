@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Bookurier Shipping default config.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <carriers>
+            <bookurier>
+                <active>0</active>
+                <model>Bookurier\Shipping\Model\Carrier\Bookurier</model>
+                <title>Bookurier</title>
+                <name>Bookurier Shipping</name>
+                <sort_order>0</sort_order>
+                <sallowspecific>0</sallowspecific>
+                <showmethod>0</showmethod>
+                <specificerrmsg>This shipping method is not available. To use this shipping method, please contact us.</specificerrmsg>
+                <handling_type>F</handling_type>
+                <handling_fee>0</handling_fee>
+                <price>0</price>
+                <available_in_checkout>1</available_in_checkout>
+                <api_user></api_user>
+                <api_pwd></api_pwd>
+                <api_key></api_key>
+                <pickup_point>5</pickup_point>
+                <service>9</service>
+                <default_packs>1</default_packs>
+                <default_weight>1</default_weight>
+                <api_mock>0</api_mock>
+            </bookurier>
+        </carriers>
+    </default>
+</config>

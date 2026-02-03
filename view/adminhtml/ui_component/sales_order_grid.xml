@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Add Bookurier mass action to order grid.
+ */
+-->
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <listingToolbar name="listing_top">
+        <massaction name="listing_massaction">
+            <action name="bookurier_create_awb">
+                <settings>
+                    <url path="bookurier/order/massCreateAwb"/>
+                    <type>bookurier_create_awb</type>
+                    <label translate="true">Create Bookurier AWB</label>
+                    <confirm>
+                        <title translate="true">Create Bookurier AWB</title>
+                        <message translate="true">Create Bookurier AWB for selected orders?</message>
+                    </confirm>
+                </settings>
+            </action>
+        </massaction>
+    </listingToolbar>
+    <columns name="sales_order_columns">
+        <column name="bookurier_awb" class="Magento\Ui\Component\Listing\Columns\Column">
+            <settings>
+                <label translate="true">Bookurier AWB</label>
+                <filter>text</filter>
+                <dataType>text</dataType>
+                <sortable>true</sortable>
+            </settings>
+        </column>
+    </columns>
+</listing>

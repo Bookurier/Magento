@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Global DI configuration for Bookurier.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Bookurier\Shipping\Logger\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">bookurier_api</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="bookurier" xsi:type="object">Bookurier\Shipping\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Magento\Sales\Model\ResourceModel\Order\Grid\Collection">
+        <plugin name="bookurier_order_grid_awb" type="Bookurier\Shipping\Plugin\OrderGridAwb" />
+    </type>
+</config>

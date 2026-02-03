@@ -1,0 +1,93 @@
+<?php /** @var \Bookurier\Shipping\Block\Adminhtml\Order\Awb\Form $block */ ?>
+<div class="page-main-actions">
+    <div class="page-actions">
+        <div class="page-actions-inner">
+            <div class="page-actions-buttons">
+                <button class="action-default" onclick="setLocation('<?php echo $block->getUrl('sales/order/view', ['order_id' => $block->getOrder()->getId()]); ?>')">
+                    <?php echo __('Back to Order'); ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post" action="<?php echo $block->escapeUrl($block->getSubmitUrl()); ?>">
+    <input type="hidden" name="form_key" value="<?php echo $block->getFormKey(); ?>" />
+
+    <fieldset class="admin__fieldset">
+        <legend class="admin__legend"><?php echo __('Bookurier Address Mapping'); ?></legend>
+
+        <div class="admin__field">
+            <label class="admin__field-label" for="street"><span><?php echo __('Street'); ?></span></label>
+            <div class="admin__field-control">
+                <input type="text" name="street" id="street" class="admin__control-text" value="<?php echo $block->escapeHtml($block->getDefaultStreet()); ?>" />
+                <?php $lines = $block->getStreetLines(); ?>
+                <?php if (!empty($lines)) : ?>
+                    <p class="note"><strong><?php echo __('Original street lines:'); ?></strong> <?php echo $block->escapeHtml(implode(' | ', $lines)); ?></p>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="admin__field">
+            <label class="admin__field-label" for="no"><span><?php echo __('No'); ?></span></label>
+            <div class="admin__field-control">
+                <input type="text" name="no" id="no" class="admin__control-text" />
+            </div>
+        </div>
+
+        <div class="admin__field">
+            <label class="admin__field-label" for="bl"><span><?php echo __('Block'); ?></span></label>
+            <div class="admin__field-control">
+                <input type="text" name="bl" id="bl" class="admin__control-text" />
+            </div>
+        </div>
+
+        <div class="admin__field">
+            <label class="admin__field-label" for="ent"><span><?php echo __('Entrance'); ?></span></label>
+            <div class="admin__field-control">
+                <input type="text" name="ent" id="ent" class="admin__control-text" />
+            </div>
+        </div>
+
+        <div class="admin__field">
+            <label class="admin__field-label" for="floor"><span><?php echo __('Floor'); ?></span></label>
+            <div class="admin__field-control">
+                <input type="text" name="floor" id="floor" class="admin__control-text" />
+            </div>
+        </div>
+
+        <div class="admin__field">
+            <label class="admin__field-label" for="apt"><span><?php echo __('Apartment'); ?></span></label>
+            <div class="admin__field-control">
+                <input type="text" name="apt" id="apt" class="admin__control-text" />
+            </div>
+        </div>
+
+        <div class="admin__field">
+            <label class="admin__field-label" for="notes"><span><?php echo __('Notes'); ?></span></label>
+            <div class="admin__field-control">
+                <textarea name="notes" id="notes" class="admin__control-textarea" rows="3"></textarea>
+            </div>
+        </div>
+
+        <div class="admin__field">
+            <label class="admin__field-label" for="ref1"><span><?php echo __('Ref1'); ?></span></label>
+            <div class="admin__field-control">
+                <input type="text" name="ref1" id="ref1" class="admin__control-text" />
+            </div>
+        </div>
+
+        <div class="admin__field">
+            <label class="admin__field-label" for="ref2"><span><?php echo __('Ref2'); ?></span></label>
+            <div class="admin__field-control">
+                <input type="text" name="ref2" id="ref2" class="admin__control-text" />
+            </div>
+        </div>
+
+        <div class="admin__field">
+            <div class="admin__field-control">
+                <button type="submit" class="action-primary"><?php echo __('Create Bookurier AWB'); ?></button>
+            </div>
+        </div>
+    </fieldset>
+</form>

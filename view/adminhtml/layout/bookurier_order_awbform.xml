@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Layout for Bookurier AWB form.
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Bookurier\Shipping\Block\Adminhtml\Order\Awb\Form" name="bookurier_awb_form" template="Bookurier_Shipping::order/awb/form.phtml" />
+        </referenceContainer>
+    </body>
+</page>
