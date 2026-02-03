@@ -42,20 +42,51 @@ class OrderViewButton
             return $result;
         }
 
-        if ((int)$order->getShipmentsCollection()->getSize() === 0) {
+        $shipments = $order->getShipmentsCollection();
+        if ((int)$shipments->getSize() === 0) {
             return $result;
         }
 
-        $url = $subject->getUrl('bookurier/order/awbform', ['order_id' => $order->getId()]);
-        $subject->addButton(
-            'bookurier_create_awb',
-            [
-                'label' => __('Create Bookurier AWB'),
-                'class' => 'primary',
-                'onclick' => "setLocation('{$url}')",
-            ]
-        );
+        $hasBookurierAwb = $this->orderHasBookurierAwb($order);
+        if ($hasBookurierAwb) {
+            $url = $subject->getUrl('bookurier/order/deleteAwb', ['order_id' => $order->getId()]);
+            $confirm = $subject->escapeJs(__('Are you sure you want to delete the Bookurier AWB?'));
+            $subject->addButton(
+                'bookurier_delete_awb',
+                [
+                    'label' => __('Delete Bookurier AWB'),
+                    'class' => 'delete',
+                    'onclick' => "confirmSetLocation('{$confirm}', '{$url}')",
+                ]
+            );
+        } else {
+            $url = $subject->getUrl('bookurier/order/awbform', ['order_id' => $order->getId()]);
+            $subject->addButton(
+                'bookurier_create_awb',
+                [
+                    'label' => __('Create Bookurier AWB'),
+                    'class' => 'primary',
+                    'onclick' => "setLocation('{$url}')",
+                ]
+            );
+        }
 
         return $result;
+    }
+
+    /**
+     * @param \Magento\Sales\Api\Data\OrderInterface $order
+     * @return bool
+     */
+    private function orderHasBookurierAwb($order): bool
+    {
+        foreach ($order->getShipmentsCollection() as $shipment) {
+            foreach ($shipment->getTracksCollection() as $track) {
+                if ($track->getCarrierCode() === 'bookurier') {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

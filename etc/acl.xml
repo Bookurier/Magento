@@ -9,11 +9,12 @@
         <resources>
             <resource id="Magento_Backend::admin">
                 <resource id="Magento_Sales::sales">
-                    <resource id="Bookurier_Shipping::bookurier" title="Bookurier" sortOrder="90">
+                <resource id="Bookurier_Shipping::bookurier" title="Bookurier" sortOrder="90">
                     <resource id="Bookurier_Shipping::awb_create" title="Create Bookurier AWB" />
-                        <resource id="Bookurier_Shipping::awb_print" title="Print AWB" />
-                        <resource id="Bookurier_Shipping::tracking_view" title="View Tracking" />
-                    </resource>
+                    <resource id="Bookurier_Shipping::awb_delete" title="Delete Bookurier AWB" />
+                    <resource id="Bookurier_Shipping::awb_print" title="Print AWB" />
+                    <resource id="Bookurier_Shipping::tracking_view" title="View Tracking" />
+                </resource>
                 </resource>
             </resource>
         </resources>
