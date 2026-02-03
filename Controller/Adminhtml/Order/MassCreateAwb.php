@@ -11,11 +11,14 @@ use Magento\Sales\Model\ResourceModel\Order\CollectionFactory;
 use Bookurier\Shipping\Model\Awb\PayloadBuilder;
 use Bookurier\Shipping\Model\Api\Client;
 use Bookurier\Shipping\Model\Awb\AwbAttacher;
+use Bookurier\Shipping\Model\Queue\Enqueuer;
 use Magento\Framework\Exception\LocalizedException;
 
 class MassCreateAwb extends Action
 {
     public const ADMIN_RESOURCE = 'Bookurier_Shipping::awb_create';
+    private const SYNC_LIMIT = 10;
+    private const MAX_BULK = 100;
 
     /**
      * @var Filter
@@ -42,13 +45,19 @@ class MassCreateAwb extends Action
      */
     private $awbAttacher;
 
+    /**
+     * @var Enqueuer
+     */
+    private $enqueuer;
+
     public function __construct(
         Context $context,
         Filter $filter,
         CollectionFactory $collectionFactory,
         PayloadBuilder $payloadBuilder,
         Client $client,
-        AwbAttacher $awbAttacher
+        AwbAttacher $awbAttacher,
+        Enqueuer $enqueuer
     ) {
         parent::__construct($context);
         $this->filter = $filter;
@@ -56,11 +65,39 @@ class MassCreateAwb extends Action
         $this->payloadBuilder = $payloadBuilder;
         $this->client = $client;
         $this->awbAttacher = $awbAttacher;
+        $this->enqueuer = $enqueuer;
     }
 
     public function execute()
     {
         $collection = $this->filter->getCollection($this->collectionFactory->create());
+        $total = (int)$collection->getSize();
+
+        if ($total === 0) {
+            $this->messageManager->addWarningMessage(__('No orders selected.'));
+            return $this->resultRedirectFactory->create()->setPath('sales/order/index');
+        }
+
+        if ($total > self::MAX_BULK) {
+            $this->messageManager->addErrorMessage(__('You can select up to %1 orders at a time.', self::MAX_BULK));
+            return $this->resultRedirectFactory->create()->setPath('sales/order/index');
+        }
+
+        if ($total > self::SYNC_LIMIT) {
+            $result = $this->enqueuer->enqueueOrders($collection->getItems());
+            if ($result['enqueued'] > 0) {
+                $this->messageManager->addSuccessMessage(
+                    __('Queued %1 order(s) for AWB creation. Make sure Magento cron is configured.', $result['enqueued'])
+                );
+            }
+            if ($result['skipped'] > 0) {
+                $this->messageManager->addWarningMessage(
+                    __('Skipped %1 order(s) that are already queued, already have AWB, or are not eligible.', $result['skipped'])
+                );
+            }
+            return $this->resultRedirectFactory->create()->setPath('sales/order/index');
+        }
+
         $groups = [];
 
         foreach ($collection as $order) {

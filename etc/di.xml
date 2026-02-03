@@ -17,4 +17,11 @@
     <type name="Magento\Sales\Model\ResourceModel\Order\Grid\Collection">
         <plugin name="bookurier_order_grid_awb" type="Bookurier\Shipping\Plugin\OrderGridAwb" />
     </type>
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="bookurier_seed_orders" xsi:type="object">Bookurier\Shipping\Console\Command\SeedOrders</item>
+            </argument>
+        </arguments>
+    </type>
 </config>
