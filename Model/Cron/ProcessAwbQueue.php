@@ -9,6 +9,7 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Sales\Api\OrderRepositoryInterface;
+use Magento\Sales\Model\Order;
 
 class ProcessAwbQueue
 {
@@ -80,7 +81,7 @@ class ProcessAwbQueue
     private function fetchBatch($connection, string $table, string $now): array
     {
         $select = $connection->select()
-            ->from($table, ['queue_id', 'order_id', 'attempts'])
+            ->from($table, ['queue_id', 'order_id', 'attempts', 'prev_state', 'prev_status'])
             ->where('status IN (?)', ['pending', 'failed'])
             ->where('attempts < ?', self::MAX_ATTEMPTS)
             ->where('scheduled_at IS NULL OR scheduled_at <= ?', $now)
@@ -115,6 +116,9 @@ class ProcessAwbQueue
             }
 
             $this->awbCreator->createForOrder($order);
+            if ($order->getStatus() === 'bookurier_pending_awb') {
+                $this->restoreOrderStatus($order, $item);
+            }
             $connection->update(
                 $table,
                 [
@@ -143,5 +147,27 @@ class ProcessAwbQueue
                 ['queue_id = ?' => $queueId]
             );
         }
+    }
+
+    /**
+     * @param \Magento\Sales\Api\Data\OrderInterface $order
+     * @param array $item
+     * @return void
+     */
+    private function restoreOrderStatus($order, array $item): void
+    {
+        $prevState = isset($item['prev_state']) ? (string)$item['prev_state'] : '';
+        $prevStatus = isset($item['prev_status']) ? (string)$item['prev_status'] : '';
+
+        if ($prevState !== '' && $prevStatus !== '') {
+            $order->setState($prevState);
+            $order->setStatus($prevStatus);
+        } else {
+            $order->setState(Order::STATE_PROCESSING);
+            $order->setStatus(Order::STATE_PROCESSING);
+        }
+
+        $order->addCommentToStatusHistory(__('Bookurier AWB created.'));
+        $this->orderRepository->save($order);
     }
 }

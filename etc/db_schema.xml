@@ -12,6 +12,8 @@
         <column xsi:type="varchar" name="status" length="16" nullable="false" default="pending" comment="Status"/>
         <column xsi:type="smallint" name="attempts" unsigned="true" nullable="false" default="0" comment="Attempts"/>
         <column xsi:type="text" name="last_error" nullable="true" comment="Last Error"/>
+        <column xsi:type="varchar" name="prev_state" length="32" nullable="true" comment="Previous Order State"/>
+        <column xsi:type="varchar" name="prev_status" length="32" nullable="true" comment="Previous Order Status"/>
         <column xsi:type="datetime" name="scheduled_at" nullable="true" comment="Scheduled At"/>
         <column xsi:type="datetime" name="processed_at" nullable="true" comment="Processed At"/>
         <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>

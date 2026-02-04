@@ -60,6 +60,18 @@ class OrderViewButton
                 ]
             );
         } else {
+            if ($order->getStatus() === 'bookurier_pending_awb') {
+                $subject->addButton(
+                    'bookurier_create_awb',
+                    [
+                        'label' => __('AWB queued'),
+                        'class' => 'disabled',
+                        'disabled' => true,
+                    ]
+                );
+                return $result;
+            }
+
             $url = $subject->getUrl('bookurier/order/awbform', ['order_id' => $order->getId()]);
             $subject->addButton(
                 'bookurier_create_awb',

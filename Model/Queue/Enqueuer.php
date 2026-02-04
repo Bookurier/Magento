@@ -7,6 +7,8 @@ namespace Bookurier\Shipping\Model\Queue;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Sales\Api\Data\OrderInterface;
+use Magento\Sales\Api\OrderRepositoryInterface;
+use Magento\Sales\Model\Order;
 
 class Enqueuer
 {
@@ -20,12 +22,19 @@ class Enqueuer
      */
     private $dateTime;
 
+    /**
+     * @var OrderRepositoryInterface
+     */
+    private $orderRepository;
+
     public function __construct(
         ResourceConnection $resource,
-        DateTime $dateTime
+        DateTime $dateTime,
+        OrderRepositoryInterface $orderRepository
     ) {
         $this->resource = $resource;
         $this->dateTime = $dateTime;
+        $this->orderRepository = $orderRepository;
     }
 
     /**
@@ -77,10 +86,13 @@ class Enqueuer
                 'order_id' => $orderId,
                 'status' => 'pending',
                 'attempts' => 0,
+                'prev_state' => (string)$order->getState(),
+                'prev_status' => (string)$order->getStatus(),
                 'scheduled_at' => $now,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+            $this->markQueued($order);
             $enqueued++;
         }
 
@@ -118,5 +130,21 @@ class Enqueuer
             }
         }
         return false;
+    }
+
+    /**
+     * @param OrderInterface $order
+     * @return void
+     */
+    private function markQueued(OrderInterface $order): void
+    {
+        if ($order->getStatus() === 'bookurier_pending_awb') {
+            return;
+        }
+
+        $order->setState(Order::STATE_PROCESSING);
+        $order->setStatus('bookurier_pending_awb');
+        $order->addCommentToStatusHistory(__('Queued for Bookurier AWB creation.'));
+        $this->orderRepository->save($order);
     }
 }

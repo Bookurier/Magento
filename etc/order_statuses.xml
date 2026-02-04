@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Order status for Bookurier AWB queue.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:sales:etc/order_statuses.xsd">
+    <status code="bookurier_pending_awb" label="Pending Bookurier AWB"/>
+    <assign code="bookurier_pending_awb" state="processing"/>
+</config>
