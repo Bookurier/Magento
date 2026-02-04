@@ -10,7 +10,7 @@
         <job name="bookurier_awb_queue_process"
              instance="Bookurier\Shipping\Model\Cron\ProcessAwbQueue"
              method="execute">
-            <schedule>*/5 * * * *</schedule>
+            <schedule>* * * * *</schedule>
         </job>
     </group>
 </config>

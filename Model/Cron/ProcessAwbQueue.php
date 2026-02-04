@@ -12,7 +12,7 @@ use Magento\Sales\Api\OrderRepositoryInterface;
 
 class ProcessAwbQueue
 {
-    private const BATCH_SIZE = 10;
+    private const BATCH_SIZE = 25;
     private const MAX_ATTEMPTS = 3;
     private const RETRY_DELAY_MINUTES = 15;
 
