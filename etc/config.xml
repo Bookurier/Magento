@@ -27,6 +27,7 @@
                 <service>9</service>
                 <default_packs>1</default_packs>
                 <default_weight>1</default_weight>
+                <enable_bulk_print_button>1</enable_bulk_print_button>
                 <api_mock>0</api_mock>
             </bookurier>
         </carriers>

@@ -5,6 +5,8 @@
  */
 -->
 <listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <settings>
+    </settings>
     <listingToolbar name="listing_top">
         <massaction name="listing_massaction">
             <action name="bookurier_create_awb">
@@ -15,6 +17,17 @@
                     <confirm>
                         <title translate="true">Create Bookurier AWB</title>
                         <message translate="true">Create Bookurier AWB for selected orders? If you select more than 10 orders, they will be queued and require Magento cron to process.</message>
+                    </confirm>
+                </settings>
+            </action>
+            <action name="bookurier_print_awb">
+                <settings>
+                    <url path="bookurier/order/massPrintAwb"/>
+                    <type>bookurier_print_awb</type>
+                    <label translate="true">Print Bookurier AWB</label>
+                    <confirm>
+                        <title translate="true">Print Bookurier AWB</title>
+                        <message translate="true">Print Bookurier AWB for selected orders?</message>
                     </confirm>
                 </settings>
             </action>
@@ -29,5 +42,13 @@
                 <sortable>true</sortable>
             </settings>
         </column>
+        <actionsColumn name="bookurier_print_awb" class="Bookurier\Shipping\Ui\Component\Listing\Column\PrintAwbAction">
+            <settings>
+                <label translate="true">Bookurier</label>
+                <filter>false</filter>
+                <sortable>false</sortable>
+                <indexField>entity_id</indexField>
+            </settings>
+        </actionsColumn>
     </columns>
 </listing>

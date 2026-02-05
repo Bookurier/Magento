@@ -17,6 +17,7 @@ class Config
     public const XML_PATH_SERVICE = 'carriers/bookurier/service';
     public const XML_PATH_DEFAULT_PACKS = 'carriers/bookurier/default_packs';
     public const XML_PATH_DEFAULT_WEIGHT = 'carriers/bookurier/default_weight';
+    public const XML_PATH_ENABLE_BULK_PRINT_BUTTON = 'carriers/bookurier/enable_bulk_print_button';
     public const XML_PATH_API_MOCK = 'carriers/bookurier/api_mock';
 
     /**
@@ -72,5 +73,10 @@ class Config
     public function isApiMockEnabled(?int $storeId = null): bool
     {
         return $this->scopeConfig->isSetFlag(self::XML_PATH_API_MOCK, ScopeInterface::SCOPE_STORE, $storeId);
+    }
+
+    public function isBulkPrintButtonEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(self::XML_PATH_ENABLE_BULK_PRINT_BUTTON, ScopeInterface::SCOPE_STORE, $storeId);
     }
 }

@@ -49,6 +49,16 @@ class OrderViewButton
 
         $hasBookurierAwb = $this->orderHasBookurierAwb($order);
         if ($hasBookurierAwb) {
+            $printUrl = $subject->getUrl('bookurier/order/printAwb', ['order_id' => $order->getId()]);
+            $subject->addButton(
+                'bookurier_print_awb',
+                [
+                    'label' => __('Print Bookurier AWB'),
+                    'class' => 'primary',
+                    'onclick' => "window.open('{$printUrl}', '_blank')",
+                ]
+            );
+
             $url = $subject->getUrl('bookurier/order/deleteAwb', ['order_id' => $order->getId()]);
             $confirm = $subject->escapeJs(__('Are you sure you want to delete the Bookurier AWB?'));
             $subject->addButton(

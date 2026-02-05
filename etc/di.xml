@@ -24,4 +24,16 @@
             </argument>
         </arguments>
     </type>
+    <type name="Magento\Framework\View\Element\Message\MessageConfigurationsPool">
+        <arguments>
+            <argument name="configurationsMap" xsi:type="array">
+                <item name="bookurier_skipped_orders" xsi:type="array">
+                    <item name="renderer" xsi:type="string">block_renderer</item>
+                    <item name="data" xsi:type="array">
+                        <item name="template" xsi:type="string">Bookurier_Shipping::message/skipped_orders.phtml</item>
+                    </item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
 </config>

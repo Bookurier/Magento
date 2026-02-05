@@ -12,6 +12,7 @@ use Bookurier\Shipping\Logger\Logger;
 class Client
 {
     private const ENDPOINT_ADD_CMDS = 'https://portal.bookurier.ro/api/add_cmds.php';
+    private const ENDPOINT_PRINT_AWBS = 'https://portal.bookurier.ro/api/print_awbs.php';
 
     /**
      * @var Curl
@@ -90,6 +91,52 @@ class Client
         }
 
         return $decoded;
+    }
+
+    /**
+     * @param array $awbCodes
+     * @param string $format
+     * @param string $mode
+     * @param int|null $page
+     * @param int|null $storeId
+     * @return string
+     */
+    public function printAwbs(
+        array $awbCodes,
+        string $format = 'pdf',
+        string $mode = 'm',
+        ?int $page = null,
+        ?int $storeId = null
+    ): string {
+        $payload = [
+            'user' => $this->config->getApiUser($storeId),
+            'pwd' => $this->config->getApiPassword($storeId),
+            'format' => $format,
+            'mode' => $mode,
+            'data' => array_values($awbCodes),
+        ];
+        if ($page !== null) {
+            $payload['page'] = $page;
+        }
+        $body = json_encode($payload);
+
+        $this->debugLog('print_request', [
+            'endpoint' => self::ENDPOINT_PRINT_AWBS,
+            'body' => $this->maskSensitiveBody($body),
+        ]);
+
+        $this->curl->setOption(CURLOPT_RETURNTRANSFER, true);
+        $this->curl->setOption(CURLOPT_TIMEOUT, 60);
+        $this->curl->setHeaders(['Content-Type' => 'application/json']);
+        $this->curl->post(self::ENDPOINT_PRINT_AWBS, $body);
+
+        $responseBody = $this->curl->getBody();
+        $this->debugLog('print_response', [
+            'status' => $this->curl->getStatus(),
+            'body_preview' => substr($responseBody, 0, 200),
+        ]);
+
+        return $responseBody;
     }
 
     /**

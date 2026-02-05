@@ -1,0 +1,16 @@
+<?php
+/** @var array $orders */
+$orders = (array)($block->getData('orders') ?? []);
+?>
+<div>
+    <strong><?php echo __('Skipped orders (no Bookurier AWB):'); ?></strong>
+    <ul>
+        <?php foreach ($orders as $order) : ?>
+            <li>
+                <a href="<?php echo $block->escapeUrl($order['url'] ?? '#'); ?>" target="_blank" rel="noopener">
+                    <?php echo $block->escapeHtml($order['increment_id'] ?? $order['order_id'] ?? ''); ?>
+                </a>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+</div>
