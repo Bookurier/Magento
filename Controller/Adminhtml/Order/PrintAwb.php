@@ -84,7 +84,7 @@ class PrintAwb extends Action
         $fileName = 'bookurier_awb_' . $order->getIncrementId() . '.pdf';
         $response = $this->getResponse();
         $response->setHeader('Content-Type', 'application/pdf', true);
-        $response->setHeader('Content-Disposition', 'attachment; filename="' . $fileName . '"', true);
+        $response->setHeader('Content-Disposition', 'inline; filename="' . $fileName . '"', true);
         $response->setBody($pdf);
         return $response;
     }
