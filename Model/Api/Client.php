@@ -13,6 +13,7 @@ class Client
 {
     private const ENDPOINT_ADD_CMDS = 'https://portal.bookurier.ro/api/add_cmds.php';
     private const ENDPOINT_PRINT_AWBS = 'https://portal.bookurier.ro/api/print_awbs.php';
+    private const ENDPOINT_AWB_HISTORY = 'https://portal.bookurier.ro/api/awb_history.php';
 
     /**
      * @var Curl
@@ -137,6 +138,55 @@ class Client
         ]);
 
         return $responseBody;
+    }
+
+    /**
+     * @param string $awbCode
+     * @param int|null $storeId
+     * @return array
+     */
+    public function getAwbHistory(string $awbCode, ?int $storeId = null): array
+    {
+        $apiKey = $this->config->getApiKey($storeId);
+        if ($apiKey === '') {
+            return [
+                'success' => false,
+                'status' => 'error',
+                'message' => 'Missing Bookurier API key.',
+            ];
+        }
+
+        $query = http_build_query([
+            'key' => $apiKey,
+            'awb' => $awbCode,
+        ]);
+        $url = self::ENDPOINT_AWB_HISTORY . '?' . $query;
+
+        $this->debugLog('history_request', [
+            'endpoint' => self::ENDPOINT_AWB_HISTORY,
+            'awb' => $awbCode,
+        ]);
+
+        $this->curl->setOption(CURLOPT_RETURNTRANSFER, true);
+        $this->curl->setOption(CURLOPT_TIMEOUT, 30);
+        $this->curl->get($url);
+
+        $body = $this->curl->getBody();
+        $this->debugLog('history_response', [
+            'status' => $this->curl->getStatus(),
+            'body' => $body,
+        ]);
+
+        $decoded = json_decode($body, true);
+        if (!is_array($decoded)) {
+            return [
+                'success' => false,
+                'status' => 'error',
+                'message' => 'Invalid JSON response from Bookurier.',
+            ];
+        }
+
+        return $decoded;
     }
 
     /**

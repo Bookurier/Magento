@@ -34,4 +34,32 @@
             <column name="order_id"/>
         </index>
     </table>
+
+    <table name="bookurier_awb_status" resource="default" engine="innodb" comment="Bookurier AWB Status Cache">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="awb" length="64" nullable="false" comment="AWB Code"/>
+        <column xsi:type="int" name="order_id" unsigned="true" nullable="true" comment="Order ID"/>
+        <column xsi:type="datetime" name="last_query_at" nullable="true" comment="Last Query At"/>
+        <column xsi:type="datetime" name="last_sort_date" nullable="true" comment="Last Status Sort Date"/>
+        <column xsi:type="varchar" name="last_status_id" length="32" nullable="true" comment="Last Status ID"/>
+        <column xsi:type="varchar" name="last_status_name" length="255" nullable="true" comment="Last Status Name"/>
+        <column xsi:type="text" name="payload" nullable="true" comment="Last API Payload"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="BOOKURIER_AWB_STATUS_AWB_UNIQUE">
+            <column name="awb"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="BOOKURIER_AWB_STATUS_ORDER_ID_SALES_ORDER_ENTITY_ID"
+                    table="bookurier_awb_status" column="order_id"
+                    referenceTable="sales_order" referenceColumn="entity_id" onDelete="SET NULL"/>
+        <index referenceId="BOOKURIER_AWB_STATUS_LAST_QUERY_AT" indexType="btree">
+            <column name="last_query_at"/>
+        </index>
+        <index referenceId="BOOKURIER_AWB_STATUS_ORDER_ID" indexType="btree">
+            <column name="order_id"/>
+        </index>
+    </table>
 </schema>

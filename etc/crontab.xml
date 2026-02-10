@@ -12,5 +12,10 @@
              method="execute">
             <schedule>* * * * *</schedule>
         </job>
+        <job name="bookurier_awb_tracking_sync"
+             instance="Bookurier\Shipping\Model\Cron\SyncAwbTracking"
+             method="execute">
+            <schedule>* * * * *</schedule>
+        </job>
     </group>
 </config>
