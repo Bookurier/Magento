@@ -25,6 +25,8 @@
                 <api_key></api_key>
                 <pickup_point>5</pickup_point>
                 <service>9</service>
+                <print_awb_mode>m</print_awb_mode>
+                <print_awb_format>pdf</print_awb_format>
                 <default_packs>1</default_packs>
                 <default_weight>1</default_weight>
                 <enable_bulk_print_button>1</enable_bulk_print_button>

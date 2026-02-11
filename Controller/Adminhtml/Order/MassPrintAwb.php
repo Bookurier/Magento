@@ -11,7 +11,7 @@ use Magento\Ui\Component\MassAction\Filter;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory;
 use Bookurier\Shipping\Model\Awb\AwbLocator;
 use Bookurier\Shipping\Model\Api\Client;
-use Magento\Framework\Message\MessageInterface;
+use Bookurier\Shipping\Model\Config;
 
 class MassPrintAwb extends Action
 {
@@ -37,18 +37,25 @@ class MassPrintAwb extends Action
      */
     private $client;
 
+    /**
+     * @var Config
+     */
+    private $config;
+
     public function __construct(
         Context $context,
         Filter $filter,
         CollectionFactory $collectionFactory,
         AwbLocator $awbLocator,
-        Client $client
+        Client $client,
+        Config $config
     ) {
         parent::__construct($context);
         $this->filter = $filter;
         $this->collectionFactory = $collectionFactory;
         $this->awbLocator = $awbLocator;
         $this->client = $client;
+        $this->config = $config;
     }
 
     public function execute()
@@ -112,26 +119,33 @@ class MassPrintAwb extends Action
             return $this->resultRedirectFactory->create()->setPath('sales/order/index');
         }
 
+        $pageParam = $this->getRequest()->getParam('page');
+        $page = ($pageParam === null || $pageParam === '') ? null : (int)$pageParam;
+        $mode = $this->config->getPrintAwbMode();
+        $format = $this->config->getPrintAwbFormat();
+
         try {
-            $pdf = $this->client->printAwbs($awbCodes, 'pdf', 'm', null);
+            $document = $this->client->printAwbs($awbCodes, $format, $mode, $page);
         } catch (\Exception $e) {
             $this->messageManager->addErrorMessage(__('Failed to print Bookurier AWB.'));
             return $this->resultRedirectFactory->create()->setPath('sales/order/index');
         }
 
-        if (strpos(ltrim($pdf), '{') === 0) {
-            $decoded = json_decode($pdf, true);
+        if (strpos(ltrim($document), '{') === 0) {
+            $decoded = json_decode($document, true);
             if (is_array($decoded) && ($decoded['status'] ?? '') === 'error') {
                 $this->messageManager->addErrorMessage(__($decoded['message'] ?? 'Failed to print Bookurier AWB.'));
                 return $this->resultRedirectFactory->create()->setPath('sales/order/index');
             }
         }
 
-        $fileName = 'bookurier_awb_bulk_' . date('Ymd_His') . '.pdf';
+        $extension = $format === 'html' ? 'html' : 'pdf';
+        $contentType = $format === 'html' ? 'text/html; charset=UTF-8' : 'application/pdf';
+        $fileName = 'bookurier_awb_bulk_' . date('Ymd_His') . '.' . $extension;
         $response = $this->getResponse();
-        $response->setHeader('Content-Type', 'application/pdf', true);
+        $response->setHeader('Content-Type', $contentType, true);
         $response->setHeader('Content-Disposition', 'inline; filename="' . $fileName . '"', true);
-        $response->setBody($pdf);
+        $response->setBody($document);
         return $response;
     }
 }

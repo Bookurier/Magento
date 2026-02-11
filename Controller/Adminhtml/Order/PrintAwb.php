@@ -9,7 +9,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Bookurier\Shipping\Model\Awb\AwbLocator;
 use Bookurier\Shipping\Model\Api\Client;
-use Magento\Framework\Exception\LocalizedException;
+use Bookurier\Shipping\Model\Config;
 use Magento\Framework\Exception\NoSuchEntityException;
 
 class PrintAwb extends Action
@@ -31,16 +31,23 @@ class PrintAwb extends Action
      */
     private $client;
 
+    /**
+     * @var Config
+     */
+    private $config;
+
     public function __construct(
         Context $context,
         OrderRepositoryInterface $orderRepository,
         AwbLocator $awbLocator,
-        Client $client
+        Client $client,
+        Config $config
     ) {
         parent::__construct($context);
         $this->orderRepository = $orderRepository;
         $this->awbLocator = $awbLocator;
         $this->client = $client;
+        $this->config = $config;
     }
 
     public function execute()
@@ -64,28 +71,33 @@ class PrintAwb extends Action
             return $this->resultRedirectFactory->create()->setPath('sales/order/view', ['order_id' => $orderId]);
         }
 
-        $mode = count($awbCodes) === 1 ? 's' : 'm';
+        $mode = $this->config->getPrintAwbMode((int)$order->getStoreId());
+        $format = $this->config->getPrintAwbFormat((int)$order->getStoreId());
+        $pageParam = $this->getRequest()->getParam('page');
+        $page = ($pageParam === null || $pageParam === '') ? null : (int)$pageParam;
 
         try {
-            $pdf = $this->client->printAwbs($awbCodes, 'pdf', $mode, null, (int)$order->getStoreId());
+            $document = $this->client->printAwbs($awbCodes, $format, $mode, $page, (int)$order->getStoreId());
         } catch (\Exception $e) {
             $this->messageManager->addErrorMessage(__('Failed to print Bookurier AWB.'));
             return $this->resultRedirectFactory->create()->setPath('sales/order/view', ['order_id' => $orderId]);
         }
 
-        if (strpos(ltrim($pdf), '{') === 0) {
-            $decoded = json_decode($pdf, true);
+        if (strpos(ltrim($document), '{') === 0) {
+            $decoded = json_decode($document, true);
             if (is_array($decoded) && ($decoded['status'] ?? '') === 'error') {
                 $this->messageManager->addErrorMessage(__($decoded['message'] ?? 'Failed to print Bookurier AWB.'));
                 return $this->resultRedirectFactory->create()->setPath('sales/order/view', ['order_id' => $orderId]);
             }
         }
 
-        $fileName = 'bookurier_awb_' . $order->getIncrementId() . '.pdf';
+        $extension = $format === 'html' ? 'html' : 'pdf';
+        $contentType = $format === 'html' ? 'text/html; charset=UTF-8' : 'application/pdf';
+        $fileName = 'bookurier_awb_' . $order->getIncrementId() . '.' . $extension;
         $response = $this->getResponse();
-        $response->setHeader('Content-Type', 'application/pdf', true);
+        $response->setHeader('Content-Type', $contentType, true);
         $response->setHeader('Content-Disposition', 'inline; filename="' . $fileName . '"', true);
-        $response->setBody($pdf);
+        $response->setBody($document);
         return $response;
     }
 }

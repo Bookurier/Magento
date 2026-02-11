@@ -109,16 +109,27 @@ class Client
         ?int $page = null,
         ?int $storeId = null
     ): string {
+        $effectiveMode = $mode;
         $payload = [
-            'user' => $this->config->getApiUser($storeId),
-            'pwd' => $this->config->getApiPassword($storeId),
-            'format' => $format,
-            'mode' => $mode,
-            'data' => array_values($awbCodes),
+            'user'      => $this->config->getApiUser($storeId),
+            'pwd'       => $this->config->getApiPassword($storeId),
+            'format'    => $format,
+            'mode'      => $effectiveMode,
+            'data'      => array_values($awbCodes),
         ];
-        if ($page !== null) {
-            $payload['page'] = $page;
+
+        if ($page === 0) {
+            $payload['page'] = 0;
+        } elseif ($page === 1) {
+            // Bookurier rejects non-zero "page"; emulate 1 AWB/page using single-label mode.
+            $payload['mode'] = 's';
+        } elseif ($page !== null) {
+            return json_encode([
+                'status' => 'error',
+                'message' => 'Unsupported page value. Use 0 (default layout) or 1 (one AWB per page).',
+            ]);
         }
+
         $body = json_encode($payload);
 
         $this->debugLog('print_request', [

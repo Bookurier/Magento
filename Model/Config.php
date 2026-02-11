@@ -5,6 +5,7 @@
 namespace Bookurier\Shipping\Model;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Store\Model\ScopeInterface;
 
 class Config
@@ -15,6 +16,8 @@ class Config
     public const XML_PATH_API_KEY = 'carriers/bookurier/api_key';
     public const XML_PATH_PICKUP_POINT = 'carriers/bookurier/pickup_point';
     public const XML_PATH_SERVICE = 'carriers/bookurier/service';
+    public const XML_PATH_PRINT_AWB_MODE = 'carriers/bookurier/print_awb_mode';
+    public const XML_PATH_PRINT_AWB_FORMAT = 'carriers/bookurier/print_awb_format';
     public const XML_PATH_DEFAULT_PACKS = 'carriers/bookurier/default_packs';
     public const XML_PATH_DEFAULT_WEIGHT = 'carriers/bookurier/default_weight';
     public const XML_PATH_ENABLE_BULK_PRINT_BUTTON = 'carriers/bookurier/enable_bulk_print_button';
@@ -25,9 +28,17 @@ class Config
      */
     private $scopeConfig;
 
-    public function __construct(ScopeConfigInterface $scopeConfig)
-    {
+    /**
+     * @var EncryptorInterface
+     */
+    private $encryptor;
+
+    public function __construct(
+        ScopeConfigInterface $scopeConfig,
+        EncryptorInterface $encryptor
+    ) {
         $this->scopeConfig = $scopeConfig;
+        $this->encryptor = $encryptor;
     }
 
     public function isActive(?int $storeId = null): bool
@@ -42,7 +53,17 @@ class Config
 
     public function getApiPassword(?int $storeId = null): string
     {
-        return (string)$this->scopeConfig->getValue(self::XML_PATH_API_PWD, ScopeInterface::SCOPE_STORE, $storeId);
+        $value = (string)$this->scopeConfig->getValue(self::XML_PATH_API_PWD, ScopeInterface::SCOPE_STORE, $storeId);
+        if ($value === '' || preg_match('/^\*+$/', $value)) {
+            return '';
+        }
+
+        // Legacy installs may still have plaintext credentials in DB.
+        if (!$this->isEncryptedConfigValue($value)) {
+            return $value;
+        }
+
+        return $this->encryptor->decrypt($value);
     }
 
     public function getApiKey(?int $storeId = null): string
@@ -58,6 +79,18 @@ class Config
     public function getServiceCode(?int $storeId = null): string
     {
         return (string)$this->scopeConfig->getValue(self::XML_PATH_SERVICE, ScopeInterface::SCOPE_STORE, $storeId);
+    }
+
+    public function getPrintAwbMode(?int $storeId = null): string
+    {
+        $mode = (string)$this->scopeConfig->getValue(self::XML_PATH_PRINT_AWB_MODE, ScopeInterface::SCOPE_STORE, $storeId);
+        return in_array($mode, ['s', 'm'], true) ? $mode : 'm';
+    }
+
+    public function getPrintAwbFormat(?int $storeId = null): string
+    {
+        $format = (string)$this->scopeConfig->getValue(self::XML_PATH_PRINT_AWB_FORMAT, ScopeInterface::SCOPE_STORE, $storeId);
+        return in_array($format, ['pdf', 'html'], true) ? $format : 'pdf';
     }
 
     public function getDefaultPacks(?int $storeId = null): int
@@ -78,5 +111,13 @@ class Config
     public function isBulkPrintButtonEnabled(?int $storeId = null): bool
     {
         return $this->scopeConfig->isSetFlag(self::XML_PATH_ENABLE_BULK_PRINT_BUTTON, ScopeInterface::SCOPE_STORE, $storeId);
+    }
+
+    /**
+     * Check whether a config value follows Magento encrypted value format.
+     */
+    private function isEncryptedConfigValue(string $value): bool
+    {
+        return (bool)preg_match('/^\d+:\d+:.+$/', $value);
     }
 }

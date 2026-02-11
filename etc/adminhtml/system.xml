@@ -63,6 +63,7 @@
                 </field>
                 <field id="api_pwd" translate="label" type="obscure" sortOrder="201" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>API Password</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
                 <field id="api_key" translate="label" type="text" sortOrder="202" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>API Key</label>
@@ -73,20 +74,28 @@
                 <field id="service" translate="label" type="text" sortOrder="204" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Default Service Code</label>
                 </field>
-                <field id="default_packs" translate="label" type="text" sortOrder="205" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                <field id="print_awb_mode" translate="label" type="select" sortOrder="205" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Print AWB Mode</label>
+                    <source_model>Bookurier\Shipping\Model\Config\Source\PrintAwbMode</source_model>
+                </field>
+                <field id="print_awb_format" translate="label" type="select" sortOrder="206" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Print AWB Format</label>
+                    <source_model>Bookurier\Shipping\Model\Config\Source\PrintAwbFormat</source_model>
+                </field>
+                <field id="default_packs" translate="label" type="text" sortOrder="207" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Default Packs</label>
                     <validate>validate-number validate-zero-or-greater</validate>
                 </field>
-                <field id="default_weight" translate="label" type="text" sortOrder="206" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                <field id="default_weight" translate="label" type="text" sortOrder="208" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Default Weight (kg)</label>
                     <validate>validate-number validate-zero-or-greater</validate>
                 </field>
-                <field id="api_mock" translate="label" type="select" sortOrder="207" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                <field id="api_mock" translate="label" type="select" sortOrder="209" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Mock API Response</label>
                     <comment>Return a simulated success response without calling Bookurier.</comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="enable_bulk_print_button" translate="label" type="select" sortOrder="208" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                <field id="enable_bulk_print_button" translate="label" type="select" sortOrder="210" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Enable Order Grid Print Button</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
