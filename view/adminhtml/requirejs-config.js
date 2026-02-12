@@ -1,4 +1,9 @@
 var config = {
+    map: {
+        '*': {
+            'js/theme': 'Bookurier_Shipping/js/theme-patch'
+        }
+    },
     config: {
         mixins: {
             'Magento_Ui/js/grid/massactions': {
