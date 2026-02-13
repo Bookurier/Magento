@@ -9,6 +9,7 @@
     <table name="bookurier_awb_queue" resource="default" engine="innodb" comment="Bookurier AWB Queue">
         <column xsi:type="int" name="queue_id" unsigned="true" nullable="false" identity="true" comment="Queue ID"/>
         <column xsi:type="int" name="order_id" unsigned="true" nullable="false" comment="Order ID"/>
+        <column xsi:type="int" name="shipment_id" unsigned="true" nullable="true" comment="Shipment ID"/>
         <column xsi:type="varchar" name="status" length="16" nullable="false" default="pending" comment="Status"/>
         <column xsi:type="smallint" name="attempts" unsigned="true" nullable="false" default="0" comment="Attempts"/>
         <column xsi:type="text" name="last_error" nullable="true" comment="Last Error"/>
@@ -24,6 +25,9 @@
         <constraint xsi:type="foreign" referenceId="BOOKURIER_AWB_QUEUE_ORDER_ID_SALES_ORDER_ENTITY_ID"
                     table="bookurier_awb_queue" column="order_id"
                     referenceTable="sales_order" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <constraint xsi:type="foreign" referenceId="BOOKURIER_AWB_QUEUE_SHIPMENT_ID_SALES_SHIPMENT_ENTITY_ID"
+                    table="bookurier_awb_queue" column="shipment_id"
+                    referenceTable="sales_shipment" referenceColumn="entity_id" onDelete="CASCADE"/>
         <index referenceId="BOOKURIER_AWB_QUEUE_STATUS" indexType="btree">
             <column name="status"/>
         </index>
@@ -32,6 +36,9 @@
         </index>
         <index referenceId="BOOKURIER_AWB_QUEUE_ORDER_ID" indexType="btree">
             <column name="order_id"/>
+        </index>
+        <index referenceId="BOOKURIER_AWB_QUEUE_SHIPMENT_ID" indexType="btree">
+            <column name="shipment_id"/>
         </index>
     </table>
 

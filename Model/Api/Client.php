@@ -173,20 +173,23 @@ class Client
         ]);
         $url = self::ENDPOINT_AWB_HISTORY . '?' . $query;
 
-        $this->debugLog('history_request', [
-            'endpoint' => self::ENDPOINT_AWB_HISTORY,
-            'awb' => $awbCode,
-        ]);
-
         $this->curl->setOption(CURLOPT_RETURNTRANSFER, true);
         $this->curl->setOption(CURLOPT_TIMEOUT, 30);
         $this->curl->get($url);
 
         $body = $this->curl->getBody();
-        $this->debugLog('history_response', [
-            'status' => $this->curl->getStatus(),
-            'body' => $body,
-        ]);
+
+        // only log errors
+        if($this->curl->getStatus() !== 200) {
+            $this->debugLog('history_request', [
+                'endpoint' => self::ENDPOINT_AWB_HISTORY,
+                'awb' => $awbCode,
+            ]);
+            $this->debugLog('history_response', [
+                'status' => $this->curl->getStatus(),
+                'body' => $body,
+            ]);
+        }
 
         $decoded = json_decode($body, true);
         if (!is_array($decoded)) {

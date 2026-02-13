@@ -22,6 +22,8 @@ class Config
     public const XML_PATH_DEFAULT_WEIGHT = 'carriers/bookurier/default_weight';
     public const XML_PATH_ENABLE_BULK_PRINT_BUTTON = 'carriers/bookurier/enable_bulk_print_button';
     public const XML_PATH_API_MOCK = 'carriers/bookurier/api_mock';
+    public const XML_PATH_SALLOW_SPECIFIC = 'carriers/bookurier/sallowspecific';
+    public const XML_PATH_SPECIFIC_COUNTRY = 'carriers/bookurier/specificcountry';
 
     /**
      * @var ScopeConfigInterface
@@ -111,6 +113,40 @@ class Config
     public function isBulkPrintButtonEnabled(?int $storeId = null): bool
     {
         return $this->scopeConfig->isSetFlag(self::XML_PATH_ENABLE_BULK_PRINT_BUTTON, ScopeInterface::SCOPE_STORE, $storeId);
+    }
+
+    /**
+     * Check if destination country is allowed by carrier config.
+     */
+    public function isCountryAllowed(string $countryId, ?int $storeId = null): bool
+    {
+        $countryId = strtoupper(trim($countryId));
+        if ($countryId === '') {
+            return false;
+        }
+
+        $allowSpecific = (string)$this->scopeConfig->getValue(
+            self::XML_PATH_SALLOW_SPECIFIC,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        // "0" means all allowed; "1" means only configured countries.
+        if ($allowSpecific !== '1') {
+            return true;
+        }
+
+        $specific = (string)$this->scopeConfig->getValue(
+            self::XML_PATH_SPECIFIC_COUNTRY,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+        $allowedCountries = array_filter(array_map('trim', explode(',', strtoupper($specific))));
+        if (empty($allowedCountries)) {
+            return false;
+        }
+
+        return in_array($countryId, $allowedCountries, true);
     }
 
     /**

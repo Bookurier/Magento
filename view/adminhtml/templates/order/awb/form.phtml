@@ -1,4 +1,6 @@
 <?php /** @var \Bookurier\Shipping\Block\Adminhtml\Order\Awb\Form $block */ ?>
+<?php $shipments = $block->getShipments(); ?>
+<?php $selectedShipmentId = $block->getSelectedShipmentId(); ?>
 <div class="page-main-actions">
     <div class="page-actions">
         <div class="page-actions-inner">
@@ -11,62 +13,113 @@
     </div>
 </div>
 
+<?php if (empty($shipments)) : ?>
+    <div class="message message-notice">
+        <div><?php echo __('There are no shipments eligible for AWB creation on this order.'); ?></div>
+    </div>
+<?php else : ?>
 <form method="post" action="<?php echo $block->escapeUrl($block->getSubmitUrl()); ?>">
     <input type="hidden" name="form_key" value="<?php echo $block->getFormKey(); ?>" />
 
     <fieldset class="admin__fieldset">
-        <legend class="admin__legend"><?php echo __('Bookurier Address Mapping'); ?></legend>
+        <legend class="admin__legend"><?php echo __('Shipment Selection'); ?></legend>
+
+        <?php foreach ($shipments as $shipment) : ?>
+            <?php $shipmentId = (int)$shipment->getId(); ?>
+            <div class="admin__field">
+                <label class="admin__field-label">
+                    <span><?php echo __('Shipment %1', $block->escapeHtml($block->getShipmentLabel($shipment))); ?></span>
+                </label>
+                <div class="admin__field-control">
+                    <label>
+                        <input
+                            type="radio"
+                            name="shipment_id"
+                            value="<?php echo $shipmentId; ?>"
+                            data-rbs-value="<?php echo $block->escapeHtmlAttr(number_format((float)$block->getShipmentRbsValue($shipment), 2, '.', '')); ?>"
+                            <?php if ($selectedShipmentId === $shipmentId) : ?>checked="checked"<?php endif; ?>
+                        />
+                        <strong><?php echo __('Eligible'); ?></strong>
+                    </label>
+                    <div class="admin__control-text">
+                        <?php foreach ($block->getShipmentAddressLines($shipment) as $line) : ?>
+                            <div><?php echo $block->escapeHtml($line); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </fieldset>
+
+    <fieldset class="admin__fieldset">
+        <legend class="admin__legend"><?php echo __('Bookurier AWB Options'); ?></legend>
 
         <div class="admin__field">
-            <label class="admin__field-label" for="street"><span><?php echo __('Street'); ?></span></label>
+            <label class="admin__field-label" for="weight"><span><?php echo __('Weight (kg)'); ?></span></label>
             <div class="admin__field-control">
-                <input type="text" name="street" id="street" class="admin__control-text" value="<?php echo $block->escapeHtml($block->getDefaultStreet()); ?>" />
-                <?php $lines = $block->getStreetLines(); ?>
-                <?php if (!empty($lines)) : ?>
-                    <p class="note"><strong><?php echo __('Original street lines:'); ?></strong> <?php echo $block->escapeHtml(implode(' | ', $lines)); ?></p>
-                <?php endif; ?>
+                <input type="text" name="weight" id="weight" class="admin__control-text" />
             </div>
         </div>
 
         <div class="admin__field">
-            <label class="admin__field-label" for="no"><span><?php echo __('No'); ?></span></label>
+            <label class="admin__field-label" for="rbs_val"><span><?php echo __('Return Value'); ?></span></label>
             <div class="admin__field-control">
-                <input type="text" name="no" id="no" class="admin__control-text" />
+                <input
+                    type="text"
+                    name="rbs_val"
+                    id="rbs_val"
+                    class="admin__control-text"
+                    value="<?php echo $block->escapeHtml($block->getDefaultRbsValue()); ?>"
+                />
             </div>
         </div>
 
         <div class="admin__field">
-            <label class="admin__field-label" for="bl"><span><?php echo __('Block'); ?></span></label>
+            <label class="admin__field-label" for="insurance_val"><span><?php echo __('Insurance Value'); ?></span></label>
             <div class="admin__field-control">
-                <input type="text" name="bl" id="bl" class="admin__control-text" />
+                <input type="text" name="insurance_val" id="insurance_val" class="admin__control-text" value="0" />
             </div>
         </div>
 
         <div class="admin__field">
-            <label class="admin__field-label" for="ent"><span><?php echo __('Entrance'); ?></span></label>
+            <label class="admin__field-label" for="ret_doc"><span><?php echo __('Return Documents'); ?></span></label>
             <div class="admin__field-control">
-                <input type="text" name="ent" id="ent" class="admin__control-text" />
+                <input type="checkbox" name="ret_doc" id="ret_doc" value="1" />
             </div>
         </div>
 
         <div class="admin__field">
-            <label class="admin__field-label" for="floor"><span><?php echo __('Floor'); ?></span></label>
+            <label class="admin__field-label" for="weekend"><span><?php echo __('Weekend Delivery'); ?></span></label>
             <div class="admin__field-control">
-                <input type="text" name="floor" id="floor" class="admin__control-text" />
+                <input type="checkbox" name="weekend" id="weekend" value="1" />
             </div>
         </div>
 
         <div class="admin__field">
-            <label class="admin__field-label" for="apt"><span><?php echo __('Apartment'); ?></span></label>
+            <label class="admin__field-label" for="unpack"><span><?php echo __('Unpack'); ?></span></label>
             <div class="admin__field-control">
-                <input type="text" name="apt" id="apt" class="admin__control-text" />
+                <input type="checkbox" name="unpack" id="unpack" value="1" />
+            </div>
+        </div>
+
+        <div class="admin__field">
+            <label class="admin__field-label" for="exchange_pack"><span><?php echo __('Exchange Pack'); ?></span></label>
+            <div class="admin__field-control">
+                <input type="checkbox" name="exchange_pack" id="exchange_pack" value="1" />
+            </div>
+        </div>
+
+        <div class="admin__field">
+            <label class="admin__field-label" for="confirmation"><span><?php echo __('Confirmation'); ?></span></label>
+            <div class="admin__field-control">
+                <input type="checkbox" name="confirmation" id="confirmation" value="1" />
             </div>
         </div>
 
         <div class="admin__field">
             <label class="admin__field-label" for="notes"><span><?php echo __('Notes'); ?></span></label>
             <div class="admin__field-control">
-                <textarea name="notes" id="notes" class="admin__control-textarea" rows="3"></textarea>
+                <textarea name="notes" id="notes" class="admin__control-textarea" rows="3"><?php echo ''; ?></textarea>
             </div>
         </div>
 
@@ -91,3 +144,25 @@
         </div>
     </fieldset>
 </form>
+<script>
+require(['jquery'], function ($) {
+    var $rbs = $('#rbs_val');
+    var $radios = $('input[name="shipment_id"]');
+
+    function applySelectedShipmentValue() {
+        var $selected = $radios.filter(':checked');
+        if (!$selected.length) {
+            return;
+        }
+        var value = $selected.data('rbs-value');
+        if (value === undefined || value === null || value === '') {
+            return;
+        }
+        $rbs.val(value);
+    }
+
+    $radios.on('change', applySelectedShipmentValue);
+    applySelectedShipmentValue();
+});
+</script>
+<?php endif; ?>

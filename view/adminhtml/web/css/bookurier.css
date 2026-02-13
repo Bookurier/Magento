@@ -1,3 +1,30 @@
 .bookurier-warning .modal-inner-wrap {
     background: #ffffcb !important;
 }
+
+.actions-split.bookurier-awb-main .action-default span {
+    position: relative;
+    padding-left: 18px;
+}
+
+.actions-split.bookurier-awb-main .action-default span:before {
+    content: "+";
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-weight: 700;
+}
+
+.actions-split.bookurier-awb-main .dropdown-menu .item {
+    white-space: pre-line;
+    line-height: 1.25;
+}
+
+#bookurier_awb_actions-create:before {
+    content: "+ ";
+    font-weight: 700;
+}
+
+#bookurier_awb_actions-print:before {
+    content: "\2399  ";
+}

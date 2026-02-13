@@ -51,19 +51,28 @@ class CreateAwb extends Action
         }
 
         $overrides = [
-            'street' => (string)$this->getRequest()->getParam('street'),
-            'no' => (string)$this->getRequest()->getParam('no'),
-            'bl' => (string)$this->getRequest()->getParam('bl'),
-            'ent' => (string)$this->getRequest()->getParam('ent'),
-            'floor' => (string)$this->getRequest()->getParam('floor'),
-            'apt' => (string)$this->getRequest()->getParam('apt'),
+            'weight' => $this->toNullableFloat($this->getRequest()->getParam('weight')),
+            'rbs_val' => $this->toNullableFloat($this->getRequest()->getParam('rbs_val')),
+            'insurance_val' => $this->toNullableFloat($this->getRequest()->getParam('insurance_val')),
+            'ret_doc' => $this->toFlag($this->getRequest()->getParam('ret_doc')),
+            'weekend' => $this->toFlag($this->getRequest()->getParam('weekend')),
+            'unpack' => $this->toFlag($this->getRequest()->getParam('unpack')),
+            'exchange_pack' => $this->toFlag($this->getRequest()->getParam('exchange_pack')),
+            'confirmation' => $this->toFlag($this->getRequest()->getParam('confirmation')),
             'notes' => (string)$this->getRequest()->getParam('notes'),
             'ref1' => (string)$this->getRequest()->getParam('ref1'),
             'ref2' => (string)$this->getRequest()->getParam('ref2'),
         ];
+        $overrides = array_filter($overrides, static function ($value) {
+            return $value !== null;
+        });
+        $shipmentId = (int)$this->getRequest()->getParam('shipment_id');
+        if ($shipmentId <= 0) {
+            $shipmentId = null;
+        }
 
         try {
-            $awbCode = $this->awbCreator->createForOrder($order, $overrides);
+            $awbCode = $this->awbCreator->createForOrder($order, $overrides, $shipmentId);
             $this->messageManager->addSuccessMessage(__('AWB created: %1', $awbCode));
         } catch (LocalizedException $e) {
             $this->messageManager->addErrorMessage($e->getMessage());
@@ -72,5 +81,28 @@ class CreateAwb extends Action
         }
 
         return $this->resultRedirectFactory->create()->setPath('sales/order/view', ['order_id' => $orderId]);
+    }
+
+    /**
+     * @param mixed $value
+     * @return float|null
+     */
+    private function toNullableFloat($value): ?float
+    {
+        $raw = trim((string)$value);
+        if ($raw === '') {
+            return null;
+        }
+
+        return (float)$raw;
+    }
+
+    /**
+     * @param mixed $value
+     * @return int
+     */
+    private function toFlag($value): int
+    {
+        return ((int)$value) === 1 ? 1 : 0;
     }
 }

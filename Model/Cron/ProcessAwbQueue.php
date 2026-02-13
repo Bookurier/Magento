@@ -14,8 +14,8 @@ use Magento\Sales\Model\Order;
 class ProcessAwbQueue
 {
     private const BATCH_SIZE = 25;
-    private const MAX_ATTEMPTS = 3;
-    private const RETRY_DELAY_MINUTES = 15;
+    public const MAX_ATTEMPTS = 3;
+    private const RETRY_DELAY_MINUTES = 1;
 
     /**
      * @var ResourceConnection
@@ -81,7 +81,7 @@ class ProcessAwbQueue
     private function fetchBatch($connection, string $table, string $now): array
     {
         $select = $connection->select()
-            ->from($table, ['queue_id', 'order_id', 'attempts', 'prev_state', 'prev_status'])
+            ->from($table, ['queue_id', 'order_id', 'shipment_id', 'attempts', 'prev_state', 'prev_status'])
             ->where('status IN (?)', ['pending', 'failed'])
             ->where('attempts < ?', self::MAX_ATTEMPTS)
             ->where('scheduled_at IS NULL OR scheduled_at <= ?', $now)
@@ -101,6 +101,7 @@ class ProcessAwbQueue
     {
         $queueId = (int)$item['queue_id'];
         $orderId = (int)$item['order_id'];
+        $shipmentId = isset($item['shipment_id']) ? (int)$item['shipment_id'] : 0;
         $attempts = (int)$item['attempts'];
         $now = $this->dateTime->gmtDate();
 
@@ -115,7 +116,16 @@ class ProcessAwbQueue
                 throw new LocalizedException(__('Order has no shipment to attach AWB. Create a shipment first.'));
             }
 
-            $this->awbCreator->createForOrder($order);
+            if ($shipmentId > 0 && !$this->orderHasShipment($order, $shipmentId)) {
+                throw new LocalizedException(__('Shipment no longer exists for this order.'));
+            }
+
+            $this->awbCreator->createForOrder(
+                $order,
+                [],
+                $shipmentId > 0 ? $shipmentId : null,
+                $queueId
+            );
             if ($order->getStatus() === 'bookurier_pending_awb') {
                 $this->restoreOrderStatus($order, $item);
             }
@@ -147,6 +157,21 @@ class ProcessAwbQueue
                 ['queue_id = ?' => $queueId]
             );
         }
+    }
+
+    /**
+     * @param \Magento\Sales\Api\Data\OrderInterface $order
+     * @param int $shipmentId
+     * @return bool
+     */
+    private function orderHasShipment($order, int $shipmentId): bool
+    {
+        foreach ($order->getShipmentsCollection() as $shipment) {
+            if ((int)$shipment->getId() === $shipmentId) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

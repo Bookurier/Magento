@@ -6,7 +6,6 @@ namespace Bookurier\Shipping\Model\Awb;
 
 use Bookurier\Shipping\Model\Config;
 use Magento\Sales\Api\Data\OrderInterface;
-use Magento\Sales\Model\Order\Address;
 
 class PayloadBuilder
 {
@@ -23,17 +22,22 @@ class PayloadBuilder
     /**
      * @param OrderInterface $order
      * @param array $overrides
+     * @param int|null $shipmentId
      * @return array
      */
-    public function build(OrderInterface $order, array $overrides = []): array
+    public function build(OrderInterface $order, array $overrides = [], ?int $shipmentId = null): array
     {
-        /** @var Address|null $address */
-        $address = $order->getShippingAddress();
+        /** @var object|null $address */
+        $address = $this->resolveAddress($order, $shipmentId);
         $streetLines = $address ? $address->getStreet() : [];
+        $unq = (string)$order->getIncrementId();
+        if ($shipmentId !== null && $shipmentId > 0) {
+            $unq .= '-' . $shipmentId;
+        }
 
         $payload = [
             'pickup_point' => $this->config->getPickupPoint((int)$order->getStoreId()),
-            'unq' => $order->getIncrementId(),
+            'unq' => $unq,
             'recv' => $address ? trim($address->getFirstname() . ' ' . $address->getLastname()) : '',
             'phone' => $address ? (string)$address->getTelephone() : '',
             'email' => $address ? (string)$address->getEmail() : (string)$order->getCustomerEmail(),
@@ -49,7 +53,7 @@ class PayloadBuilder
             'apt' => $overrides['apt'] ?? '',
             'service' => $this->config->getServiceCode((int)$order->getStoreId()),
             'packs' => $this->config->getDefaultPacks((int)$order->getStoreId()),
-            'weight' => $this->config->getDefaultWeight((int)$order->getStoreId()),
+            'weight' => $overrides['weight'] ?? $this->config->getDefaultWeight((int)$order->getStoreId()),
             'rbs_val' => $overrides['rbs_val'] ?? 0,
             'insurance_val' => $overrides['insurance_val'] ?? 0,
             'ret_doc' => $overrides['ret_doc'] ?? 0,
@@ -62,11 +66,19 @@ class PayloadBuilder
             'ref2' => $overrides['ref2'] ?? '',
         ];
 
-        if (isset($overrides['street'])) {
-            $payload['street'] = $overrides['street'];
-        }
-
         return $payload;
+    }
+
+    /**
+     * Resolve destination address from order shipping address.
+     *
+     * @param OrderInterface $order
+     * @param int|null $shipmentId
+     * @return object|null
+     */
+    private function resolveAddress(OrderInterface $order, ?int $shipmentId): ?object
+    {
+        return $order->getShippingAddress() ?: null;
     }
 
     /**
