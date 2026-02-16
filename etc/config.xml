@@ -30,6 +30,7 @@
                 <default_packs>1</default_packs>
                 <default_weight>1</default_weight>
                 <enable_bulk_print_button>1</enable_bulk_print_button>
+                <notify_customer_on_awb_create>1</notify_customer_on_awb_create>
                 <api_mock>0</api_mock>
             </bookurier>
         </carriers>

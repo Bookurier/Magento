@@ -99,6 +99,11 @@
                     <label>Enable Order Grid Print Button</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
+                <field id="notify_customer_on_awb_create" translate="label" type="select" sortOrder="211" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Notify Customer on AWB Creation</label>
+                    <comment>Send Magento shipment email when a Bookurier AWB is attached to a shipment.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
             </group>
         </section>
     </system>

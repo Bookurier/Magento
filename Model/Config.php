@@ -21,6 +21,7 @@ class Config
     public const XML_PATH_DEFAULT_PACKS = 'carriers/bookurier/default_packs';
     public const XML_PATH_DEFAULT_WEIGHT = 'carriers/bookurier/default_weight';
     public const XML_PATH_ENABLE_BULK_PRINT_BUTTON = 'carriers/bookurier/enable_bulk_print_button';
+    public const XML_PATH_NOTIFY_CUSTOMER_ON_AWB_CREATE = 'carriers/bookurier/notify_customer_on_awb_create';
     public const XML_PATH_API_MOCK = 'carriers/bookurier/api_mock';
     public const XML_PATH_SALLOW_SPECIFIC = 'carriers/bookurier/sallowspecific';
     public const XML_PATH_SPECIFIC_COUNTRY = 'carriers/bookurier/specificcountry';
@@ -113,6 +114,15 @@ class Config
     public function isBulkPrintButtonEnabled(?int $storeId = null): bool
     {
         return $this->scopeConfig->isSetFlag(self::XML_PATH_ENABLE_BULK_PRINT_BUTTON, ScopeInterface::SCOPE_STORE, $storeId);
+    }
+
+    public function isCustomerNotificationOnAwbCreateEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_NOTIFY_CUSTOMER_ON_AWB_CREATE,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 
     /**
