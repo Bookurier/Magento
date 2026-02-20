@@ -60,9 +60,15 @@ class AwbAttacher
      * @param OrderInterface $order
      * @param string $awbCode
      * @param int|null $shipmentId
+     * @param bool $notifyCustomer
      * @throws LocalizedException
      */
-    public function attach(OrderInterface $order, string $awbCode, ?int $shipmentId = null): void
+    public function attach(
+        OrderInterface $order,
+        string $awbCode,
+        ?int $shipmentId = null,
+        bool $notifyCustomer = true
+    ): void
     {
         $shipment = $this->resolveShipment($order, $shipmentId);
 
@@ -73,7 +79,9 @@ class AwbAttacher
 
         $shipment->addTrack($track);
         $this->shipmentRepository->save($shipment);
-        $this->notifyCustomerIfEnabled($order, $shipment);
+        if ($notifyCustomer) {
+            $this->notifyCustomerIfEnabled($order, $shipment);
+        }
     }
 
     /**

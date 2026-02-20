@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Bookurier module events.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="sales_order_shipment_save_after">
+        <observer name="bookurier_set_pending_awb_status_on_shipment_create"
+                  instance="Bookurier\Shipping\Observer\SetPendingAwbStatusOnShipmentCreate"/>
+    </event>
+</config>

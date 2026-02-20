@@ -1,0 +1,92 @@
+<?php
+/**
+ * Bookurier-aware shipment tracking block for shipment emails.
+ */
+?>
+<?php /* @var \Magento\Framework\View\Element\Template $block */ ?>
+<?php $_shipment = $block->getShipment() ?>
+<?php $_order = $block->getOrder() ?>
+<?php if ($_shipment && $_order) : ?>
+    <?php $trackCollection = $_shipment->getTracksCollection() ?>
+    <?php if ($trackCollection) : ?>
+        <br />
+        <table class="shipment-track">
+            <thead>
+            <tr>
+                <th><?= $block->escapeHtml(__('Shipped By')) ?></th>
+                <th><?= $block->escapeHtml(__('Tracking Number')) ?></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($trackCollection as $_item) : ?>
+                <tr>
+                    <td><?= $block->escapeHtml($_item->getTitle()) ?>:</td>
+                    <td>
+                        <a href="<?= $block->escapeUrl($block->getTrackingUrl()->getUrl($_item)) ?>" target="_blank">
+                            <?= $block->escapeHtml($_item->getNumber()) ?>
+                        </a>
+                    </td>
+                </tr>
+            <?php endforeach ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
+
+    <?php $isBookurierOrder = strpos((string)$_order->getShippingMethod(), 'bookurier_') === 0; ?>
+    <?php if ($isBookurierOrder) : ?>
+        <?php $summaryRows = []; ?>
+        <?php foreach ($_order->getShipmentsCollection() as $orderShipment) : ?>
+            <?php
+            $shipmentId = (int)$orderShipment->getId();
+            $shipmentLabel = (string)$orderShipment->getIncrementId();
+            if ($shipmentLabel === '') {
+                $shipmentLabel = '#' . $shipmentId;
+            }
+            $bookurierTracks = [];
+            foreach ($orderShipment->getTracksCollection() as $orderTrack) {
+                if ((string)$orderTrack->getCarrierCode() !== 'bookurier') {
+                    continue;
+                }
+                $bookurierTracks[] = $orderTrack;
+            }
+            $summaryRows[] = [
+                'shipment_id' => $shipmentId,
+                'shipment_label' => $shipmentLabel,
+                'tracks' => $bookurierTracks,
+            ];
+            ?>
+        <?php endforeach; ?>
+
+        <br />
+        <table class="shipment-track">
+            <thead>
+            <tr>
+                <th><?= $block->escapeHtml(__('Shipment')) ?></th>
+                <th><?= $block->escapeHtml(__('Bookurier AWB Code(s)')) ?></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($summaryRows as $row) : ?>
+                <tr>
+                    <td>
+                        <?= $block->escapeHtml(__('Shipment %1 (ID: %2)', $row['shipment_label'], (int)$row['shipment_id'])) ?>
+                    </td>
+                    <td>
+                        <?php if (!empty($row['tracks'])) : ?>
+                            <?php foreach ($row['tracks'] as $bookurierTrack) : ?>
+                                <div>
+                                    <a href="<?= $block->escapeUrl($block->getTrackingUrl()->getUrl($bookurierTrack)) ?>" target="_blank">
+                                        <?= $block->escapeHtml($bookurierTrack->getNumber()) ?>
+                                    </a>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else : ?>
+                            <?= $block->escapeHtml(__('No AWB yet')) ?>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
+<?php endif; ?>

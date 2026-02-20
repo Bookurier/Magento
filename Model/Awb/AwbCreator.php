@@ -151,7 +151,8 @@ class AwbCreator
         for ($idx = 0; $idx < $attachCount; $idx++) {
             $awbCode = $awbCodes[$idx];
             $targetShipmentId = (int)$targetShipments[$idx]->getId();
-            $this->awbAttacher->attach($order, $awbCode, $targetShipmentId);
+            $shouldNotifyCustomer = ($idx === ($attachCount - 1));
+            $this->awbAttacher->attach($order, $awbCode, $targetShipmentId, $shouldNotifyCustomer);
             $attachedCodes[] = $awbCode;
         }
 
