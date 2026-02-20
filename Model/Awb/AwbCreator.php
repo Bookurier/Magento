@@ -75,56 +75,106 @@ class AwbCreator
 
         $shipment = $this->resolveShipment($order, $shipmentId);
         $resolvedShipmentId = (int)$shipment->getId();
-        $countryId = $this->resolveCountryId($order, $shipment);
+        $orderId = (int)$order->getEntityId();
 
-        if ($this->shipmentHasBookurierAwb($shipment)) {
-            throw new LocalizedException(
-                __('Shipment #%1 already has a Bookurier AWB.', $resolvedShipmentId)
-            );
+        // Queue jobs are still shipment-scoped. Manual/sync flow processes all eligible shipments in one request.
+        $targetShipments = [];
+        if ($currentQueueId !== null && $currentQueueId > 0) {
+            if ($this->shipmentHasBookurierAwb($shipment)) {
+                throw new LocalizedException(
+                    __('Shipment #%1 already has a Bookurier AWB.', $resolvedShipmentId)
+                );
+            }
+            if ($this->isShipmentQueueActive($orderId, $resolvedShipmentId, $currentQueueId)) {
+                throw new LocalizedException(
+                    __('AWB creation is already queued for shipment #%1.', $resolvedShipmentId)
+                );
+            }
+            $targetShipments = [$shipment];
+        } else {
+            $targetShipments = $this->getEligibleShipments($order);
+            if (empty($targetShipments)) {
+                throw new LocalizedException(__('All shipments on this order already have a Bookurier AWB.'));
+            }
+            foreach ($targetShipments as $targetShipment) {
+                $targetShipmentId = (int)$targetShipment->getId();
+                if ($this->isShipmentQueueActive($orderId, $targetShipmentId)) {
+                    throw new LocalizedException(
+                        __('AWB creation is already queued for shipment #%1.', $targetShipmentId)
+                    );
+                }
+            }
         }
 
-        if ($this->isShipmentQueueActive((int)$order->getEntityId(), $resolvedShipmentId, $currentQueueId)) {
-            throw new LocalizedException(
-                __('AWB creation is already queued for shipment #%1.', $resolvedShipmentId)
-            );
-        }
+        $primaryShipment = $targetShipments[0];
+        $countryId = $this->resolveCountryId($order, $primaryShipment);
 
         if (!$this->config->isCountryAllowed($countryId, (int)$order->getStoreId())) {
             throw new LocalizedException(
                 __(
                     'Shipment #%1 destination country (%2) is not allowed for Bookurier.',
-                    $resolvedShipmentId,
+                    (int)$primaryShipment->getId(),
                     $countryId
                 )
             );
         }
 
         if (!array_key_exists('rbs_val', $overrides)) {
-            $overrides['rbs_val'] = $this->getCodAmount($order, $shipment);
+            $overrides['rbs_val'] = $this->getCodAmountForShipments($order, $targetShipments);
         }
+        $overrides['packs'] = count($targetShipments);
 
-        $payload = $this->payloadBuilder->build($order, $overrides, $resolvedShipmentId);
+        $payload = $this->payloadBuilder->build($order, $overrides, (int)$primaryShipment->getId());
         $result = $this->client->addCommands([$payload], (int)$order->getStoreId());
 
         if (($result['status'] ?? '') !== 'success') {
             throw new LocalizedException(__($result['message'] ?? 'Failed to create AWB.'));
         }
 
-        $awbCode = $result['data'][0] ?? null;
-        if (!$awbCode) {
+        $rawCodes = isset($result['data']) && is_array($result['data']) ? array_values($result['data']) : [];
+        $awbCodes = [];
+        foreach ($rawCodes as $code) {
+            $code = trim((string)$code);
+            if ($code !== '') {
+                $awbCodes[] = $code;
+            }
+        }
+        if (empty($awbCodes)) {
             throw new LocalizedException(__('No AWB code returned by Bookurier.'));
         }
 
-        $this->awbAttacher->attach($order, (string)$awbCode, $resolvedShipmentId);
-        return (string)$awbCode;
+        $requestedCount = count($targetShipments);
+        $returnedCount = count($awbCodes);
+        $attachCount = min($requestedCount, $returnedCount);
+        $attachedCodes = [];
+
+        for ($idx = 0; $idx < $attachCount; $idx++) {
+            $awbCode = $awbCodes[$idx];
+            $targetShipmentId = (int)$targetShipments[$idx]->getId();
+            $this->awbAttacher->attach($order, $awbCode, $targetShipmentId);
+            $attachedCodes[] = $awbCode;
+        }
+
+        if ($requestedCount !== $returnedCount) {
+            throw new LocalizedException(
+                __(
+                    'Bookurier AWB mismatch: requested %1 shipment(s), received %2 AWB code(s), attached %3.',
+                    $requestedCount,
+                    $returnedCount,
+                    $attachCount
+                )
+            );
+        }
+
+        return implode(', ', $attachedCodes);
     }
 
     /**
      * @param OrderInterface $order
-     * @param ShipmentInterface $shipment
+     * @param ShipmentInterface[] $shipments
      * @return float
      */
-    private function getCodAmount(OrderInterface $order, ShipmentInterface $shipment): float
+    private function getCodAmountForShipments(OrderInterface $order, array $shipments): float
     {
         $payment = $order->getPayment();
         if (!$payment || $payment->getMethod() !== 'cashondelivery') {
@@ -132,28 +182,54 @@ class AwbCreator
         }
 
         $value = 0.0;
-        foreach ($shipment->getItemsCollection() as $shipmentItem) {
-            $qtyShipped = (float)$shipmentItem->getQty();
-            $orderItem = $shipmentItem->getOrderItem();
-            if (!$orderItem || $qtyShipped <= 0.0) {
-                continue;
-            }
+        foreach ($shipments as $shipment) {
+            foreach ($shipment->getItemsCollection() as $shipmentItem) {
+                $qtyShipped = (float)$shipmentItem->getQty();
+                $orderItem = $shipmentItem->getOrderItem();
+                if (!$orderItem || $qtyShipped <= 0.0) {
+                    continue;
+                }
 
-            $qtyOrdered = (float)$orderItem->getQtyOrdered();
-            if ($qtyOrdered <= 0.0) {
-                continue;
-            }
+                $qtyOrdered = (float)$orderItem->getQtyOrdered();
+                if ($qtyOrdered <= 0.0) {
+                    continue;
+                }
 
-            $rowTotalInclTax = (float)$orderItem->getRowTotalInclTax();
-            if ($rowTotalInclTax <= 0.0) {
-                $rowTotalInclTax = (float)$orderItem->getRowTotal();
-            }
+                $rowTotalInclTax = (float)$orderItem->getRowTotalInclTax();
+                if ($rowTotalInclTax <= 0.0) {
+                    $rowTotalInclTax = (float)$orderItem->getRowTotal();
+                }
 
-            $unitValue = $rowTotalInclTax / $qtyOrdered;
-            $value += $unitValue * $qtyShipped;
+                $unitValue = $rowTotalInclTax / $qtyOrdered;
+                $value += $unitValue * $qtyShipped;
+            }
         }
 
         return (float)round($value, 2);
+    }
+
+    /**
+     * @param OrderInterface $order
+     * @return ShipmentInterface[]
+     */
+    private function getEligibleShipments(OrderInterface $order): array
+    {
+        $shipments = [];
+        foreach ($order->getShipmentsCollection() as $shipment) {
+            if (!$shipment instanceof ShipmentInterface) {
+                continue;
+            }
+            if ($this->shipmentHasBookurierAwb($shipment)) {
+                continue;
+            }
+            $shipments[] = $shipment;
+        }
+
+        usort($shipments, static function (ShipmentInterface $a, ShipmentInterface $b): int {
+            return (int)$a->getId() <=> (int)$b->getId();
+        });
+
+        return $shipments;
     }
 
     /**

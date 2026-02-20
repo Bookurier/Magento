@@ -34,27 +34,6 @@ class Form extends AbstractOrder
     }
 
     /**
-     * @return int|null
-     */
-    public function getSelectedShipmentId(): ?int
-    {
-        $requested = (int)$this->getRequest()->getParam('shipment_id');
-        if ($requested > 0) {
-            foreach ($this->getShipments() as $shipment) {
-                if ((int)$shipment->getId() === $requested) {
-                    return $requested;
-                }
-            }
-        }
-
-        foreach ($this->getShipments() as $shipment) {
-            return (int)$shipment->getId();
-        }
-
-        return null;
-    }
-
-    /**
      * @param ShipmentInterface $shipment
      * @return bool
      */
@@ -84,66 +63,16 @@ class Form extends AbstractOrder
     }
 
     /**
-     * @param ShipmentInterface $shipment
-     * @return string[]
-     */
-    public function getShipmentAddressLines(ShipmentInterface $shipment): array
-    {
-        $address = $this->getOrder()->getShippingAddress();
-        if (!$address) {
-            return [];
-        }
-
-        $lines = [];
-        $name = trim((string)$address->getFirstname() . ' ' . (string)$address->getLastname());
-        if ($name !== '') {
-            $lines[] = $name;
-        }
-
-        foreach ((array)$address->getStreet() as $streetLine) {
-            $streetLine = trim((string)$streetLine);
-            if ($streetLine !== '') {
-                $lines[] = $streetLine;
-            }
-        }
-
-        $cityLine = trim(implode(', ', array_filter([
-            (string)$address->getCity(),
-            (string)$address->getRegion(),
-            (string)$address->getPostcode(),
-            (string)$address->getCountryId(),
-        ])));
-        if ($cityLine !== '') {
-            $lines[] = $cityLine;
-        }
-
-        $phone = trim((string)$address->getTelephone());
-        if ($phone !== '') {
-            $lines[] = __('Phone: %1', $phone);
-        }
-
-        return $lines;
-    }
-
-    /**
      * @return float
      */
     public function getDefaultRbsValue(): float
     {
-        $selectedShipmentId = $this->getSelectedShipmentId();
-        if ($selectedShipmentId !== null) {
-            foreach ($this->getShipments() as $shipment) {
-                if ((int)$shipment->getId() === $selectedShipmentId) {
-                    return $this->getShipmentRbsValue($shipment);
-                }
-            }
-        }
-
+        $value = 0.0;
         foreach ($this->getShipments() as $shipment) {
-            return $this->getShipmentRbsValue($shipment);
+            $value += $this->getShipmentRbsValue($shipment);
         }
 
-        return 0.0;
+        return (float)round($value, 2);
     }
 
     /**

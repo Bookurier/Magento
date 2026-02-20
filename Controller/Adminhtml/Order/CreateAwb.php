@@ -66,13 +66,8 @@ class CreateAwb extends Action
         $overrides = array_filter($overrides, static function ($value) {
             return $value !== null;
         });
-        $shipmentId = (int)$this->getRequest()->getParam('shipment_id');
-        if ($shipmentId <= 0) {
-            $shipmentId = null;
-        }
-
         try {
-            $awbCode = $this->awbCreator->createForOrder($order, $overrides, $shipmentId);
+            $awbCode = $this->awbCreator->createForOrder($order, $overrides, null);
             $this->messageManager->addSuccessMessage(__('AWB created: %1', $awbCode));
         } catch (LocalizedException $e) {
             $this->messageManager->addErrorMessage($e->getMessage());

@@ -9,7 +9,7 @@ use Magento\Framework\App\ResourceConnection;
 
 class HistoryProvider
 {
-    private const MIN_QUERY_INTERVAL_MINUTES = 30;
+    private const MIN_QUERY_INTERVAL_MINUTES = 180;
 
     /**
      * @var ResourceConnection

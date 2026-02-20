@@ -52,7 +52,7 @@ class PayloadBuilder
             'floor' => $overrides['floor'] ?? '',
             'apt' => $overrides['apt'] ?? '',
             'service' => $this->config->getServiceCode((int)$order->getStoreId()),
-            'packs' => $this->config->getDefaultPacks((int)$order->getStoreId()),
+            'packs' => $overrides['packs'] ?? $this->config->getDefaultPacks((int)$order->getStoreId()),
             'weight' => $overrides['weight'] ?? $this->config->getDefaultWeight((int)$order->getStoreId()),
             'rbs_val' => $overrides['rbs_val'] ?? 0,
             'insurance_val' => $overrides['insurance_val'] ?? 0,

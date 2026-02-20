@@ -107,31 +107,23 @@ class MassCreateAwb extends Action
                 continue;
             }
 
-            foreach ($order->getShipmentsCollection() as $shipment) {
-                $shipmentId = (int)$shipment->getId();
-                $shipmentRef = (string)$shipment->getIncrementId();
-                if ($shipmentRef === '') {
-                    $shipmentRef = '#' . $shipmentId;
+            try {
+                $this->awbCreator->createForOrder($order, [], null);
+                $created++;
+            } catch (LocalizedException $e) {
+                $skipped++;
+                $message = trim((string)$e->getMessage());
+                if ($message === '') {
+                    $message = 'Not eligible for AWB creation.';
                 }
-
-                try {
-                    $this->awbCreator->createForOrder($order, [], $shipmentId);
-                    $created++;
-                } catch (LocalizedException $e) {
-                    $skipped++;
-                    $message = trim((string)$e->getMessage());
-                    if ($message === '') {
-                        $message = 'Not eligible for AWB creation.';
-                    }
-                    $skippedByReason[$message][] = (string)$order->getIncrementId() . '/' . $shipmentRef;
-                } catch (\Exception $e) {
-                    $failed++;
-                }
+                $skippedByReason[$message][] = (string)$order->getIncrementId();
+            } catch (\Exception $e) {
+                $failed++;
             }
         }
 
         if ($created) {
-            $this->messageManager->addSuccessMessage(__('Created %1 AWB(s).', $created));
+            $this->messageManager->addSuccessMessage(__('Processed %1 order(s) for Bookurier AWB creation.', $created));
         }
         if ($skipped) {
             $this->messageManager->addWarningMessage(
@@ -139,7 +131,7 @@ class MassCreateAwb extends Action
             );
         }
         if ($failed) {
-            $this->messageManager->addErrorMessage(__('Failed to create %1 AWB(s).', $failed));
+            $this->messageManager->addErrorMessage(__('Failed to process %1 order(s) for Bookurier AWB creation.', $failed));
         }
 
         return $this->resultRedirectFactory->create()->setPath('sales/order/index');

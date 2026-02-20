@@ -1,6 +1,5 @@
 <?php /** @var \Bookurier\Shipping\Block\Adminhtml\Order\Awb\Form $block */ ?>
 <?php $shipments = $block->getShipments(); ?>
-<?php $selectedShipmentId = $block->getSelectedShipmentId(); ?>
 <div class="page-main-actions">
     <div class="page-actions">
         <div class="page-actions-inner">
@@ -22,33 +21,16 @@
     <input type="hidden" name="form_key" value="<?php echo $block->getFormKey(); ?>" />
 
     <fieldset class="admin__fieldset">
-        <legend class="admin__legend"><?php echo __('Shipment Selection'); ?></legend>
-
-        <?php foreach ($shipments as $shipment) : ?>
-            <?php $shipmentId = (int)$shipment->getId(); ?>
-            <div class="admin__field">
-                <label class="admin__field-label">
-                    <span><?php echo __('Shipment %1', $block->escapeHtml($block->getShipmentLabel($shipment))); ?></span>
-                </label>
-                <div class="admin__field-control">
-                    <label>
-                        <input
-                            type="radio"
-                            name="shipment_id"
-                            value="<?php echo $shipmentId; ?>"
-                            data-rbs-value="<?php echo $block->escapeHtmlAttr(number_format((float)$block->getShipmentRbsValue($shipment), 2, '.', '')); ?>"
-                            <?php if ($selectedShipmentId === $shipmentId) : ?>checked="checked"<?php endif; ?>
-                        />
-                        <strong><?php echo __('Eligible'); ?></strong>
-                    </label>
-                    <div class="admin__control-text">
-                        <?php foreach ($block->getShipmentAddressLines($shipment) as $line) : ?>
-                            <div><?php echo $block->escapeHtml($line); ?></div>
-                        <?php endforeach; ?>
-                    </div>
+        <legend class="admin__legend"><?php echo __('Eligible Shipments'); ?></legend>
+        <div class="admin__field">
+            <div class="admin__field-control">
+                <div class="admin__control-text">
+                    <?php foreach ($shipments as $shipment) : ?>
+                        <div><?php echo __('Shipment %1', $block->escapeHtml($block->getShipmentLabel($shipment))); ?></div>
+                    <?php endforeach; ?>
                 </div>
             </div>
-        <?php endforeach; ?>
+        </div>
     </fieldset>
 
     <fieldset class="admin__fieldset">
@@ -144,25 +126,4 @@
         </div>
     </fieldset>
 </form>
-<script>
-require(['jquery'], function ($) {
-    var $rbs = $('#rbs_val');
-    var $radios = $('input[name="shipment_id"]');
-
-    function applySelectedShipmentValue() {
-        var $selected = $radios.filter(':checked');
-        if (!$selected.length) {
-            return;
-        }
-        var value = $selected.data('rbs-value');
-        if (value === undefined || value === null || value === '') {
-            return;
-        }
-        $rbs.val(value);
-    }
-
-    $radios.on('change', applySelectedShipmentValue);
-    applySelectedShipmentValue();
-});
-</script>
 <?php endif; ?>
