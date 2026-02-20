@@ -10,6 +10,7 @@
         <referenceBlock name="sales.order.email.shipment.track" template="Bookurier_Shipping::email/shipment/track.phtml">
             <arguments>
                 <argument name="tracking_url" xsi:type="object">Bookurier\Shipping\Block\DataProviders\Email\Shipment\TrackingUrl</argument>
+                <argument name="bookurier_summary" xsi:type="object">Bookurier\Shipping\ViewModel\Email\Shipment\BookurierSummary</argument>
             </arguments>
         </referenceBlock>
     </body>

@@ -43,4 +43,12 @@
             </argument>
         </arguments>
     </type>
+    <type name="Magento\Sales\Model\Order\Shipment\Sender\EmailSender">
+        <plugin name="bookurier_shipment_email_context"
+                type="Bookurier\Shipping\Plugin\ShipmentEmailContextPlugin"/>
+    </type>
+    <type name="Magento\Sales\Model\Order\Email\Container\ShipmentIdentity">
+        <plugin name="bookurier_shipment_email_template_selector"
+                type="Bookurier\Shipping\Plugin\ShipmentIdentityTemplatePlugin"/>
+    </type>
 </config>

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Bookurier email templates.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Email:etc/email_templates.xsd">
+    <template id="bookurier_sales_email_shipment_multi_template"
+              label="Bookurier Shipment (Multi) - Customer"
+              file="bookurier_shipment_new_multi.html"
+              type="html"
+              module="Bookurier_Shipping"
+              area="frontend"/>
+    <template id="bookurier_sales_email_shipment_multi_guest_template"
+              label="Bookurier Shipment (Multi) - Guest"
+              file="bookurier_shipment_new_multi_guest.html"
+              type="html"
+              module="Bookurier_Shipping"
+              area="frontend"/>
+</config>

@@ -1,0 +1,29 @@
+<?php
+/**
+ * Render shipment email items across all shipments on the order.
+ */
+?>
+<?php $_order = $block->getOrder() ?>
+<?php if ($_order) : ?>
+    <table class="email-items">
+        <thead>
+            <tr>
+                <th class="item-info">
+                    <?= $block->escapeHtml(__('Items')) ?>
+                </th>
+                <th class="item-qty">
+                    <?= $block->escapeHtml(__('Qty')) ?>
+                </th>
+            </tr>
+        </thead>
+        <?php foreach ($_order->getShipmentsCollection() as $_shipment) : ?>
+            <?php foreach ($_shipment->getAllItems() as $_item) : ?>
+                <?php if (!$_item->getOrderItem()->getParentItem()) : ?>
+                    <tbody>
+                        <?= $block->getItemHtml($_item) ?>
+                    </tbody>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        <?php endforeach; ?>
+    </table>
+<?php endif; ?>

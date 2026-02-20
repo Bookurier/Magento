@@ -7,8 +7,9 @@
 <?php $_shipment = $block->getShipment() ?>
 <?php $_order = $block->getOrder() ?>
 <?php if ($_shipment && $_order) : ?>
+    <?php $isBookurierOrder = strpos((string)$_order->getShippingMethod(), 'bookurier_') === 0; ?>
     <?php $trackCollection = $_shipment->getTracksCollection() ?>
-    <?php if ($trackCollection) : ?>
+    <?php if (!$isBookurierOrder && $trackCollection) : ?>
         <br />
         <table class="shipment-track">
             <thead>
@@ -32,30 +33,9 @@
         </table>
     <?php endif; ?>
 
-    <?php $isBookurierOrder = strpos((string)$_order->getShippingMethod(), 'bookurier_') === 0; ?>
     <?php if ($isBookurierOrder) : ?>
-        <?php $summaryRows = []; ?>
-        <?php foreach ($_order->getShipmentsCollection() as $orderShipment) : ?>
-            <?php
-            $shipmentId = (int)$orderShipment->getId();
-            $shipmentLabel = (string)$orderShipment->getIncrementId();
-            if ($shipmentLabel === '') {
-                $shipmentLabel = '#' . $shipmentId;
-            }
-            $bookurierTracks = [];
-            foreach ($orderShipment->getTracksCollection() as $orderTrack) {
-                if ((string)$orderTrack->getCarrierCode() !== 'bookurier') {
-                    continue;
-                }
-                $bookurierTracks[] = $orderTrack;
-            }
-            $summaryRows[] = [
-                'shipment_id' => $shipmentId,
-                'shipment_label' => $shipmentLabel,
-                'tracks' => $bookurierTracks,
-            ];
-            ?>
-        <?php endforeach; ?>
+        <?php $summaryProvider = $block->getData('bookurier_summary'); ?>
+        <?php $summaryRows = is_object($summaryProvider) ? $summaryProvider->getRowsByOrderId((int)$_order->getEntityId()) : []; ?>
 
         <br />
         <table class="shipment-track">
@@ -72,11 +52,11 @@
                         <?= $block->escapeHtml(__('Shipment %1 (ID: %2)', $row['shipment_label'], (int)$row['shipment_id'])) ?>
                     </td>
                     <td>
-                        <?php if (!empty($row['tracks'])) : ?>
-                            <?php foreach ($row['tracks'] as $bookurierTrack) : ?>
+                        <?php if (!empty($row['awb_codes'])) : ?>
+                            <?php foreach ($row['awb_codes'] as $awbCode) : ?>
                                 <div>
-                                    <a href="<?= $block->escapeUrl($block->getTrackingUrl()->getUrl($bookurierTrack)) ?>" target="_blank">
-                                        <?= $block->escapeHtml($bookurierTrack->getNumber()) ?>
+                                    <a href="<?= $block->escapeUrl('https://t.bookurier.ro/?awb=' . rawurlencode((string)$awbCode)) ?>" target="_blank">
+                                        <?= $block->escapeHtml($awbCode) ?>
                                     </a>
                                 </div>
                             <?php endforeach; ?>
