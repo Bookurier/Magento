@@ -23,15 +23,19 @@
                     <label>Price</label>
                     <validate>validate-number validate-zero-or-greater</validate>
                 </field>
-                <field id="handling_type" translate="label" type="select" sortOrder="5" showInDefault="1" showInWebsite="1" canRestore="1">
+                <field id="tracking_url" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" canRestore="1">
+                    <label>Tracking Url</label>
+                    <validate>validate-url</validate>
+                </field>
+                <field id="handling_type" translate="label" type="select" sortOrder="6" showInDefault="1" showInWebsite="1" canRestore="1">
                     <label>Calculate Handling Fee</label>
                     <source_model>Magento\Shipping\Model\Source\HandlingType</source_model>
                 </field>
-                <field id="handling_fee" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" canRestore="1">
+                <field id="handling_fee" translate="label" type="text" sortOrder="7" showInDefault="1" showInWebsite="1" canRestore="1">
                     <label>Handling Fee</label>
                     <validate>validate-number validate-zero-or-greater</validate>
                 </field>
-                <field id="available_in_checkout" translate="label" type="select" sortOrder="7" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                <field id="available_in_checkout" translate="label" type="select" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Available in Checkout</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>

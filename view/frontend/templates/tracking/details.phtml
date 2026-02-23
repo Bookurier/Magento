@@ -86,15 +86,16 @@ if (is_object($track)) {
                 <th class="col label" scope="row"><?= $block->escapeHtml(__('Info:')) ?></th>
                 <td class="col value"><?= $block->escapeHtml($track->getTrackSummary()) ?></td>
             </tr>
-        <?php elseif ($track->getUrl()) : ?>
-            <tr>
-                <th class="col label" scope="row"><?= $block->escapeHtml(__('Track:')) ?></th>
-                <td class="col value">
-                    <a href="<?= $block->escapeUrl($track->getUrl()) ?>" target="_blank">
-                        <?= $block->escapeUrl($track->getUrl()) ?>
-                    </a>
-                </td>
-            </tr>
+            <?php if ($track->getUrl()) : ?>
+                <tr>
+                    <th class="col label" scope="row"><?= $block->escapeHtml(__('Track:')) ?></th>
+                    <td class="col value">
+                        <a href="<?= $block->escapeUrl($track->getUrl()) ?>" target="_blank">
+                            <?= $block->escapeUrl($track->getUrl()) ?>
+                        </a>
+                    </td>
+                </tr>
+            <?php endif; ?>
         <?php else : ?>
             <?php foreach ($fields as $title => $property) : ?>
                 <?php if (!empty($track->$property())) : ?>

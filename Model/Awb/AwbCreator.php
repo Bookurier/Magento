@@ -7,10 +7,12 @@ namespace Bookurier\Shipping\Model\Awb;
 use Bookurier\Shipping\Model\Api\Client;
 use Bookurier\Shipping\Model\Config;
 use Bookurier\Shipping\Model\Cron\ProcessAwbQueue;
+use Magento\Sales\Model\Order;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\Data\ShipmentInterface;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Sales\Api\OrderRepositoryInterface;
 
 class AwbCreator
 {
@@ -39,18 +41,30 @@ class AwbCreator
      */
     private $config;
 
+    /**
+     * @var OrderRepositoryInterface
+     */
+    private $orderRepository;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
     public function __construct(
         Client $client,
         PayloadBuilder $payloadBuilder,
         AwbAttacher $awbAttacher,
         ResourceConnection $resource,
-        Config $config
+        Config $config,
+        OrderRepositoryInterface $orderRepository,
     ) {
         $this->client = $client;
         $this->payloadBuilder = $payloadBuilder;
         $this->awbAttacher = $awbAttacher;
         $this->resource = $resource;
         $this->config = $config;
+        $this->orderRepository = $orderRepository;
     }
 
     /**
@@ -166,6 +180,8 @@ class AwbCreator
                 )
             );
         }
+
+        $this->moveToProcessingIfPending($order);
 
         return implode(', ', $attachedCodes);
     }
@@ -319,5 +335,27 @@ class AwbCreator
         }
 
         return $countryId;
+    }
+
+    private function moveToProcessingIfPending(OrderInterface $order): void
+    {
+        // Check if the order is Pending Bookurier AWB, because we only mov to
+        // Prcessing status if we were in that status
+        if ((string)$order->getStatus() !== 'bookurier_pending_awb') {
+            return;
+        }
+
+        // Check if there are shipments without AWB, we change order status to
+        // Processing after all shipments get an AWB
+        $missingAwbShipments = $this->getEligibleShipments($order);
+        if (count($missingAwbShipments)>0){
+            return;
+        }
+
+        $defaultProcessingStatus = (string)$order->getConfig()->getStateDefaultStatus(Order::STATE_PROCESSING);
+        $order->setState(Order::STATE_PROCESSING);
+        $order->setStatus($defaultProcessingStatus ?: Order::STATE_PROCESSING);
+        $order->addCommentToStatusHistory(__('Bookurier AWB created. Order moved to Processing.'));
+        $this->orderRepository->save($order);
     }
 }

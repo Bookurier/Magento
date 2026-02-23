@@ -19,6 +19,7 @@
                 <handling_type>F</handling_type>
                 <handling_fee>0</handling_fee>
                 <price>0</price>
+                <tracking_url>https://t.bookurier.ro/?awb=%awb%</tracking_url>
                 <available_in_checkout>1</available_in_checkout>
                 <api_user></api_user>
                 <api_pwd></api_pwd>

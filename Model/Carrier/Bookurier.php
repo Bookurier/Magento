@@ -134,6 +134,8 @@ class Bookurier extends AbstractCarrier implements CarrierInterface
         $status->setCarrier($this->_code);
         $status->setCarrierTitle((string)$this->getConfigData('title'));
         $status->setTracking((string)$trackingNumber);
+        $url = str_replace('%awb%', rawurlencode((string)$trackingNumber), (string)$this->getConfigData('tracking_url'));
+        $status->setUrl($url);
 
         $historyMeta = $this->historyProvider->getHistoryWithMeta(
             (string)$trackingNumber,
