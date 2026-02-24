@@ -13,6 +13,7 @@ use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\Data\ShipmentInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Api\OrderRepositoryInterface;
+use Bookurier\Shipping\Logger\Logger;
 
 class AwbCreator
 {
@@ -47,7 +48,7 @@ class AwbCreator
     private $orderRepository;
 
     /**
-     * @var LoggerInterface
+     * @var Logger
      */
     private $logger;
 
@@ -58,6 +59,7 @@ class AwbCreator
         ResourceConnection $resource,
         Config $config,
         OrderRepositoryInterface $orderRepository,
+        Logger $logger
     ) {
         $this->client = $client;
         $this->payloadBuilder = $payloadBuilder;
@@ -65,6 +67,7 @@ class AwbCreator
         $this->resource = $resource;
         $this->config = $config;
         $this->orderRepository = $orderRepository;
+        $this->logger = $logger;
     }
 
     /**
@@ -345,17 +348,51 @@ class AwbCreator
             return;
         }
 
-        // Check if there are shipments without AWB, we change order status to
-        // Processing after all shipments get an AWB
-        $missingAwbShipments = $this->getEligibleShipments($order);
-        if (count($missingAwbShipments)>0){
+        // Check with a DB query to avoid stale in-memory shipment/track collections.
+        $orderId = (int)$order->getEntityId();
+        $missingShipmentIds = $this->getMissingBookurierAwbShipmentIdsFromDb($orderId);
+        $this->logger->info('Bookurier eligible shipments check', [
+            'order_id' => $orderId,
+            'eligible_count' => count($missingShipmentIds),
+            'eligible_shipment_ids' => $missingShipmentIds,
+        ]);
+        if (!empty($missingShipmentIds)) {
             return;
         }
 
-        $defaultProcessingStatus = (string)$order->getConfig()->getStateDefaultStatus(Order::STATE_PROCESSING);
-        $order->setState(Order::STATE_PROCESSING);
-        $order->setStatus($defaultProcessingStatus ?: Order::STATE_PROCESSING);
-        $order->addCommentToStatusHistory(__('Bookurier AWB created. Order moved to Processing.'));
-        $this->orderRepository->save($order);
+        $freshOrder = $this->orderRepository->get($orderId);
+        $defaultProcessingStatus = (string)$freshOrder->getConfig()->getStateDefaultStatus(Order::STATE_PROCESSING);
+        $freshOrder->setState(Order::STATE_PROCESSING);
+        $freshOrder->setStatus($defaultProcessingStatus ?: Order::STATE_PROCESSING);
+        $freshOrder->addCommentToStatusHistory(__('Bookurier AWB created. Order moved to Processing.'));
+        $this->orderRepository->save($freshOrder);
+    }
+
+    /**
+     * Return shipment IDs for an order that still do not have a Bookurier track.
+     *
+     * @param int $orderId
+     * @return int[]
+     */
+    private function getMissingBookurierAwbShipmentIdsFromDb(int $orderId): array
+    {
+        $connection = $this->resource->getConnection();
+        $shipmentTable = $this->resource->getTableName('sales_shipment');
+        $trackTable = $this->resource->getTableName('sales_shipment_track');
+
+        $select = $connection->select()
+            ->from(['s' => $shipmentTable], ['entity_id'])
+            ->joinLeft(
+                ['t' => $trackTable],
+                "t.parent_id = s.entity_id AND t.carrier_code = 'bookurier'",
+                []
+            )
+            ->where('s.order_id = ?', $orderId)
+            ->group('s.entity_id')
+            ->having('COUNT(t.entity_id) = 0')
+            ->order('s.entity_id ASC');
+
+        $ids = $connection->fetchCol($select);
+        return array_map('intval', $ids);
     }
 }
