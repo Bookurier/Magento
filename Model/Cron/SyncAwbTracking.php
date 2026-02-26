@@ -16,6 +16,7 @@ class SyncAwbTracking
     private const BATCH_SIZE = 25;
     private const MIN_QUERY_INTERVAL_MINUTES = 180;
     private const MAX_AWB_AGE_DAYS = 30;
+    private const DELIVERED_STATUS_IDS = [4, 5];
 
     /**
      * @var ResourceConnection
@@ -135,18 +136,21 @@ class SyncAwbTracking
                 'last_query_at' => $nowStr,
                 'payload' => $payload,
             ];
+            $latestStatus = null;
 
             if (!empty($response['success']) && !empty($response['data']) && is_array($response['data'])) {
                 $newItems = $this->filterNewStatuses($response['data'], $lastSortDate);
                 if (!empty($newItems)) {
                     $this->appendOrderComments($orderId, $awb, $newItems);
                     $latest = end($newItems);
+                    $latestStatus = is_array($latest) ? $latest : null;
                     $update['last_sort_date'] = $latest['sort_date'] ?? $lastSortDate;
                     $update['last_status_id'] = $latest['status_id'] ?? null;
                     $update['last_status_name'] = $latest['status_name'] ?? null;
                 } else {
                     $latest = $this->getLatestStatus($response['data']);
                     if ($latest !== null) {
+                        $latestStatus = $latest;
                         $update['last_sort_date'] = $latest['sort_date'] ?? $lastSortDate;
                         $update['last_status_id'] = $latest['status_id'] ?? null;
                         $update['last_status_name'] = $latest['status_name'] ?? null;
@@ -155,6 +159,18 @@ class SyncAwbTracking
             }
 
             $this->upsertStatusRow($connection, $statusTable, $update);
+
+            if ($latestStatus !== null) {
+                $this->closeOrderIfBookurierDelivered(
+                    $connection,
+                    $statusTable,
+                    $trackTable,
+                    $shipmentTable,
+                    $orderId,
+                    $awb,
+                    $latestStatus
+                );
+            }
         }
     }
 
@@ -298,5 +314,174 @@ class SyncAwbTracking
             $data,
             array_keys($data)
         );
+    }
+
+    /**
+     * @param \Magento\Framework\DB\Adapter\AdapterInterface $connection
+     * @param string $statusTable
+     * @param string $trackTable
+     * @param string $shipmentTable
+     * @param int $orderId
+     * @param string $currentAwb
+     * @param array $latestStatus
+     * @return void
+     */
+    private function closeOrderIfBookurierDelivered(
+        $connection,
+        string $statusTable,
+        string $trackTable,
+        string $shipmentTable,
+        int $orderId,
+        string $currentAwb,
+        array $latestStatus
+    ): void {
+        $currentStatusId = $this->normalizeStatusId($latestStatus['status_id'] ?? null);
+        if ($currentStatusId === null || !in_array($currentStatusId, self::DELIVERED_STATUS_IDS, true)) {
+            return;
+        }
+
+        if (!$this->allBookurierAwbsDelivered(
+            $connection,
+            $statusTable,
+            $trackTable,
+            $shipmentTable,
+            $orderId,
+            $currentAwb,
+            $currentStatusId
+        )) {
+            return;
+        }
+
+        $statusName = (string)($latestStatus['status_name'] ?? '');
+        $this->closeOrderAsDelivered($orderId, $currentAwb, $statusName);
+    }
+
+    /**
+     * @param \Magento\Framework\DB\Adapter\AdapterInterface $connection
+     * @param string $statusTable
+     * @param string $trackTable
+     * @param string $shipmentTable
+     * @param int $orderId
+     * @param string $currentAwb
+     * @param int $currentStatusId
+     * @return bool
+     */
+    private function allBookurierAwbsDelivered(
+        $connection,
+        string $statusTable,
+        string $trackTable,
+        string $shipmentTable,
+        int $orderId,
+        string $currentAwb,
+        int $currentStatusId
+    ): bool {
+        $awbRows = $connection->fetchCol(
+            $connection->select()
+                ->from(['t' => $trackTable], ['track_number'])
+                ->join(['s' => $shipmentTable], 's.entity_id = t.parent_id', [])
+                ->where('s.order_id = ?', $orderId)
+                ->where('t.carrier_code = ?', 'bookurier')
+                ->group(['t.track_number'])
+        );
+        if (!$awbRows) {
+            return false;
+        }
+
+        $awbList = array_values(array_filter(array_map('strval', $awbRows), static function (string $awb): bool {
+            return $awb !== '';
+        }));
+        if (!$awbList) {
+            return false;
+        }
+
+        $statusRows = $connection->fetchPairs(
+            $connection->select()
+                ->from($statusTable, ['awb', 'last_status_id'])
+                ->where('awb IN (?)', $awbList)
+        );
+
+        foreach ($awbList as $awb) {
+            if ($awb === $currentAwb) {
+                $statusId = $currentStatusId;
+            } else {
+                $statusId = $this->normalizeStatusId($statusRows[$awb] ?? null);
+            }
+
+            if ($statusId === null || !in_array($statusId, self::DELIVERED_STATUS_IDS, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param int $orderId
+     * @param string $awb
+     * @param string $statusName
+     * @return void
+     */
+    private function closeOrderAsDelivered(int $orderId, string $awb, string $statusName): void
+    {
+        try {
+            $order = $this->orderRepository->get($orderId);
+        } catch (\Throwable $e) {
+            $this->logger->error('Bookurier delivered order load failed', [
+                'order_id' => $orderId,
+                'awb' => $awb,
+                'error' => $e->getMessage(),
+            ]);
+            return;
+        }
+
+        $shippingMethod = (string)$order->getShippingMethod();
+        if (strpos($shippingMethod, 'bookurier_') !== 0) {
+            return;
+        }
+
+        if (in_array((string)$order->getState(), [Order::STATE_COMPLETE, Order::STATE_CLOSED], true)) {
+            return;
+        }
+
+        if (!$order->canClose()) {
+            return;
+        }
+
+        $closedStatus = (string)$order->getConfig()->getStateDefaultStatus(Order::STATE_CLOSED);
+        if ($closedStatus === '') {
+            $closedStatus = (string)$order->getStatus();
+        }
+
+        $order->setState(Order::STATE_CLOSED);
+        $order->setStatus($closedStatus);
+        $order->addCommentToStatusHistory(
+            __('Bookurier delivery confirmed for AWB %1 (%2). Order closed automatically.', $awb, $statusName ?: 'Delivered'),
+            $closedStatus
+        );
+
+        try {
+            $this->orderRepository->save($order);
+        } catch (\Throwable $e) {
+            $this->logger->error('Bookurier delivered order close failed', [
+                'order_id' => $orderId,
+                'awb' => $awb,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * @param mixed $value
+     * @return int|null
+     */
+    private function normalizeStatusId($value): ?int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_string($value) && ctype_digit($value)) {
+            return (int)$value;
+        }
+        return null;
     }
 }

@@ -95,9 +95,14 @@ class Form extends AbstractOrder
      */
     public function getDefaultRbsValue(): float
     {
-        $value = 0.0;
-        foreach ($this->getShipments() as $shipment) {
-            $value += $this->getShipmentRbsValue($shipment);
+        $payment = $this->getOrder()->getPayment();
+        if (!$payment || $payment->getMethod() !== 'cashondelivery') {
+            return 0.0;
+        }
+
+        $value = (float)$this->getOrder()->getTotalDue();
+        if ($value <= 0.0) {
+            $value = (float)$this->getOrder()->getGrandTotal();
         }
 
         return (float)round($value, 2);

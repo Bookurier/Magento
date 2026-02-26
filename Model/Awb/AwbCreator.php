@@ -136,9 +136,8 @@ class AwbCreator
             );
         }
 
-        if (!array_key_exists('rbs_val', $overrides)) {
-            $overrides['rbs_val'] = $this->getCodAmountForShipments($order, $targetShipments);
-        }
+        // Enforce COD return amount server-side so UI/manual overrides cannot send inconsistent values.
+        $overrides['rbs_val'] = $this->getCodAmountForOrder($order);
         $overrides['packs'] = count($targetShipments);
 
         $payload = $this->payloadBuilder->build($order, $overrides, (int)$primaryShipment->getId());
@@ -191,37 +190,37 @@ class AwbCreator
 
     /**
      * @param OrderInterface $order
-     * @param ShipmentInterface[] $shipments
      * @return float
      */
-    private function getCodAmountForShipments(OrderInterface $order, array $shipments): float
+    private function getCodAmountForOrder(OrderInterface $order): float
     {
         $payment = $order->getPayment();
         if (!$payment || $payment->getMethod() !== 'cashondelivery') {
             return 0.0;
         }
 
-        $value = 0.0;
-        foreach ($shipments as $shipment) {
-            foreach ($shipment->getItemsCollection() as $shipmentItem) {
-                $qtyShipped = (float)$shipmentItem->getQty();
-                $orderItem = $shipmentItem->getOrderItem();
-                if (!$orderItem || $qtyShipped <= 0.0) {
+        $value = (float)$order->getTotalDue();
+        if ($value <= 0.0) {
+            $value = (float)$order->getGrandTotal();
+        }
+        if ($value <= 0.0) {
+            $value = (float)$order->getSubtotalInclTax();
+        }
+        if ($value <= 0.0) {
+            $value = (float)$order->getSubtotal();
+        }
+
+        if ($value <= 0.0) {
+            foreach ($order->getAllItems() as $orderItem) {
+                if ($orderItem->getParentItemId()) {
                     continue;
                 }
-
-                $qtyOrdered = (float)$orderItem->getQtyOrdered();
-                if ($qtyOrdered <= 0.0) {
-                    continue;
-                }
-
                 $rowTotalInclTax = (float)$orderItem->getRowTotalInclTax();
-                if ($rowTotalInclTax <= 0.0) {
-                    $rowTotalInclTax = (float)$orderItem->getRowTotal();
+                if ($rowTotalInclTax > 0.0) {
+                    $value += $rowTotalInclTax;
+                    continue;
                 }
-
-                $unitValue = $rowTotalInclTax / $qtyOrdered;
-                $value += $unitValue * $qtyShipped;
+                $value += (float)$orderItem->getRowTotal();
             }
         }
 
