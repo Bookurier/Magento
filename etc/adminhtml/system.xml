@@ -75,8 +75,9 @@
                 <field id="pickup_point" translate="label" type="text" sortOrder="203" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Default Pickup Point</label>
                 </field>
-                <field id="service" translate="label" type="text" sortOrder="204" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                <field id="service" translate="label" type="select" sortOrder="204" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Default Service Code</label>
+                    <source_model>Bookurier\Shipping\Model\Config\Source\Service</source_model>
                 </field>
                 <field id="print_awb_mode" translate="label" type="select" sortOrder="205" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Print AWB Mode</label>

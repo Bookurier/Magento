@@ -51,6 +51,7 @@ class CreateAwb extends Action
         }
 
         $overrides = [
+            'service' => $this->toNullableInt($this->getRequest()->getParam('service')),
             'weight' => $this->toNullableFloat($this->getRequest()->getParam('weight')),
             'rbs_val' => $this->toNullableFloat($this->getRequest()->getParam('rbs_val')),
             'insurance_val' => $this->toNullableFloat($this->getRequest()->getParam('insurance_val')),
@@ -90,6 +91,20 @@ class CreateAwb extends Action
         }
 
         return (float)$raw;
+    }
+
+    /**
+     * @param mixed $value
+     * @return int|null
+     */
+    private function toNullableInt($value): ?int
+    {
+        $raw = trim((string)$value);
+        if ($raw === '') {
+            return null;
+        }
+
+        return (int)$raw;
     }
 
     /**

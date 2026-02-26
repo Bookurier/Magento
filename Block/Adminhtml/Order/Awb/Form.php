@@ -4,11 +4,39 @@
  */
 namespace Bookurier\Shipping\Block\Adminhtml\Order\Awb;
 
+use Bookurier\Shipping\Model\Config;
+use Bookurier\Shipping\Model\Config\Source\Service;
+use Magento\Backend\Block\Template\Context;
+use Magento\Framework\Registry;
 use Magento\Sales\Block\Adminhtml\Order\AbstractOrder;
 use Magento\Sales\Api\Data\ShipmentInterface;
+use Magento\Sales\Helper\Admin as AdminHelper;
 
 class Form extends AbstractOrder
 {
+    /**
+     * @var Config
+     */
+    private $config;
+
+    /**
+     * @var Service
+     */
+    private $serviceSource;
+
+    public function __construct(
+        Context $context,
+        Registry $registry,
+        AdminHelper $adminHelper,
+        Config $config,
+        Service $serviceSource,
+        array $data = []
+    ) {
+        parent::__construct($context, $registry, $adminHelper, $data);
+        $this->config = $config;
+        $this->serviceSource = $serviceSource;
+    }
+
     /**
      * @return string
      */
@@ -109,5 +137,21 @@ class Form extends AbstractOrder
         }
 
         return (float)round($value, 2);
+    }
+
+    /**
+     * @return array
+     */
+    public function getServiceOptions(): array
+    {
+        return $this->serviceSource->toOptionArray();
+    }
+
+    /**
+     * @return string
+     */
+    public function getDefaultServiceCode(): string
+    {
+        return $this->config->getServiceCode((int)$this->getOrder()->getStoreId());
     }
 }

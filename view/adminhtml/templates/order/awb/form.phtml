@@ -37,6 +37,24 @@
         <legend class="admin__legend"><?php echo __('Bookurier AWB Options'); ?></legend>
 
         <div class="admin__field">
+            <label class="admin__field-label" for="service"><span><?php echo __('Service'); ?></span></label>
+            <div class="admin__field-control">
+                <select name="service" id="service" class="admin__control-select">
+                    <?php $defaultServiceCode = (string)$block->getDefaultServiceCode(); ?>
+                    <?php foreach ($block->getServiceOptions() as $serviceOption) : ?>
+                        <?php $optionValue = (string)($serviceOption['value'] ?? ''); ?>
+                        <option
+                            value="<?php echo $block->escapeHtmlAttr($optionValue); ?>"
+                            <?php if ($optionValue === $defaultServiceCode) : ?>selected="selected"<?php endif; ?>
+                        >
+                            <?php echo $block->escapeHtml($serviceOption['label'] ?? ''); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+
+        <div class="admin__field">
             <label class="admin__field-label" for="weight"><span><?php echo __('Weight (kg)'); ?></span></label>
             <div class="admin__field-control">
                 <input type="text" name="weight" id="weight" class="admin__control-text" />
