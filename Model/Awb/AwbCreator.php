@@ -350,11 +350,11 @@ class AwbCreator
         // Check with a DB query to avoid stale in-memory shipment/track collections.
         $orderId = (int)$order->getEntityId();
         $missingShipmentIds = $this->getMissingBookurierAwbShipmentIdsFromDb($orderId);
-        $this->logger->info('Bookurier eligible shipments check', [
+        /*$this->logger->info('Bookurier eligible shipments check', [
             'order_id' => $orderId,
             'eligible_count' => count($missingShipmentIds),
             'eligible_shipment_ids' => $missingShipmentIds,
-        ]);
+        ]);*/
         if (!empty($missingShipmentIds)) {
             return;
         }

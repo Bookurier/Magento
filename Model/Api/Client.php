@@ -11,9 +11,9 @@ use Bookurier\Shipping\Logger\Logger;
 
 class Client
 {
-    private const ENDPOINT_ADD_CMDS = 'https://portal.bookurier.ro/api/add_cmds.php';
-    private const ENDPOINT_PRINT_AWBS = 'https://portal.bookurier.ro/api/print_awbs.php';
-    private const ENDPOINT_AWB_HISTORY = 'https://portal.bookurier.ro/api/awb_history.php';
+    private const ENDPOINT_ADD_CMDS = '/api/add_cmds.php';
+    private const ENDPOINT_PRINT_AWBS = '/api/print_awbs.php';
+    private const ENDPOINT_AWB_HISTORY = '/api/awb_history.php';
 
     /**
      * @var Curl
@@ -55,6 +55,7 @@ class Client
      */
     public function addCommands(array $payloads, ?int $storeId = null): array
     {
+        $endpoint = $this->buildEndpoint(self::ENDPOINT_ADD_CMDS, $storeId);
         $body = json_encode([
             'user' => $this->config->getApiUser($storeId),
             'pwd' => $this->config->getApiPassword($storeId),
@@ -62,7 +63,7 @@ class Client
         ]);
 
         $this->debugLog('request', [
-            'endpoint' => self::ENDPOINT_ADD_CMDS,
+            'endpoint' => $endpoint,
             'body' => $this->maskSensitiveBody($body),
         ]);
 
@@ -75,7 +76,7 @@ class Client
         $this->curl->setOption(CURLOPT_RETURNTRANSFER, true);
         $this->curl->setOption(CURLOPT_TIMEOUT, 30);
         $this->curl->setHeaders(['Content-Type' => 'application/json']);
-        $this->curl->post(self::ENDPOINT_ADD_CMDS, $body);
+        $this->curl->post($endpoint, $body);
 
         $body = $this->curl->getBody();
         $this->debugLog('response', [
@@ -109,6 +110,7 @@ class Client
         ?int $page = null,
         ?int $storeId = null
     ): string {
+        $endpoint = $this->buildEndpoint(self::ENDPOINT_PRINT_AWBS, $storeId);
         $effectiveMode = $mode;
         $payload = [
             'user'      => $this->config->getApiUser($storeId),
@@ -133,14 +135,14 @@ class Client
         $body = json_encode($payload);
 
         $this->debugLog('print_request', [
-            'endpoint' => self::ENDPOINT_PRINT_AWBS,
+            'endpoint' => $endpoint,
             'body' => $this->maskSensitiveBody($body),
         ]);
 
         $this->curl->setOption(CURLOPT_RETURNTRANSFER, true);
         $this->curl->setOption(CURLOPT_TIMEOUT, 60);
         $this->curl->setHeaders(['Content-Type' => 'application/json']);
-        $this->curl->post(self::ENDPOINT_PRINT_AWBS, $body);
+        $this->curl->post($endpoint, $body);
 
         $responseBody = $this->curl->getBody();
         $this->debugLog('print_response', [
@@ -158,6 +160,7 @@ class Client
      */
     public function getAwbHistory(string $awbCode, ?int $storeId = null): array
     {
+        $endpoint = $this->buildEndpoint(self::ENDPOINT_AWB_HISTORY, $storeId);
         $apiKey = $this->config->getApiKey($storeId);
         if ($apiKey === '') {
             return [
@@ -171,7 +174,7 @@ class Client
             'key' => $apiKey,
             'awb' => $awbCode,
         ]);
-        $url = self::ENDPOINT_AWB_HISTORY . '?' . $query;
+        $url = $endpoint . '?' . $query;
 
         $this->curl->setOption(CURLOPT_RETURNTRANSFER, true);
         $this->curl->setOption(CURLOPT_TIMEOUT, 30);
@@ -182,7 +185,7 @@ class Client
         // only log errors
         if($this->curl->getStatus() !== 200) {
             $this->debugLog('history_request', [
-                'endpoint' => self::ENDPOINT_AWB_HISTORY,
+                'endpoint' => $endpoint,
                 'awb' => $awbCode,
             ]);
             $this->debugLog('history_response', [
@@ -201,6 +204,13 @@ class Client
         }
 
         return $decoded;
+    }
+
+    private function buildEndpoint(string $path, ?int $storeId = null): string
+    {
+        $baseEndpoint = $this->config->getApiEndpoint($storeId);
+
+        return rtrim($baseEndpoint, '/') . $path;
     }
 
     /**

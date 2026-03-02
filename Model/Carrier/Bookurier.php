@@ -148,12 +148,12 @@ class Bookurier extends AbstractCarrier implements CarrierInterface
             $status->setData('last_query_at', $historyMeta['last_query_at']);
         }
 
-        if (empty($history['success'])) {
+        $items = $this->extractHistoryItems($history);
+        if (!$this->isHistorySuccess($history) && empty($items)) {
             $status->setTrackSummary(__('Tracking information is currently not available.'));
             return $status;
         }
 
-        $items = (isset($history['data']) && is_array($history['data'])) ? $history['data'] : [];
         $progress = $this->mapProgressDetails($items);
         if (!empty($progress)) {
             $status->setProgressdetail($progress);
@@ -170,6 +170,46 @@ class Bookurier extends AbstractCarrier implements CarrierInterface
         }
 
         return $status;
+    }
+
+    /**
+     * @param array $history
+     * @return bool
+     */
+    private function isHistorySuccess(array $history): bool
+    {
+        if (!array_key_exists('success', $history)) {
+            return false;
+        }
+
+        $success = $history['success'];
+        if (is_bool($success)) {
+            return $success;
+        }
+        if (is_numeric($success)) {
+            return (int)$success === 1;
+        }
+        if (is_string($success)) {
+            $normalized = strtolower(trim($success));
+            return in_array($normalized, ['1', 'true', 'ok', 'success'], true);
+        }
+
+        return !empty($success);
+    }
+
+    /**
+     * @param array $history
+     * @return array
+     */
+    private function extractHistoryItems(array $history): array
+    {
+        foreach (['data', 'awb_histories', 'history'] as $key) {
+            if (isset($history[$key]) && is_array($history[$key])) {
+                return $history[$key];
+            }
+        }
+
+        return [];
     }
 
     /**

@@ -143,8 +143,9 @@ class HistoryProvider
             $update['order_id'] = $orderId;
         }
 
-        if (!empty($response['success']) && !empty($response['data']) && is_array($response['data'])) {
-            $latest = $this->getLatestStatus($response['data']);
+        $items = $this->extractHistoryItems($response);
+        if ($this->isHistorySuccess($response) && !empty($items)) {
+            $latest = $this->getLatestStatus($items);
             if ($latest !== null) {
                 $update['last_sort_date'] = $latest['sort_date'] ?? null;
                 $update['last_status_id'] = $latest['status_id'] ?? null;
@@ -174,5 +175,45 @@ class HistoryProvider
         });
 
         return end($filtered) ?: null;
+    }
+
+    /**
+     * @param array $history
+     * @return bool
+     */
+    private function isHistorySuccess(array $history): bool
+    {
+        if (!array_key_exists('success', $history)) {
+            return false;
+        }
+
+        $success = $history['success'];
+        if (is_bool($success)) {
+            return $success;
+        }
+        if (is_numeric($success)) {
+            return (int)$success === 1;
+        }
+        if (is_string($success)) {
+            $normalized = strtolower(trim($success));
+            return in_array($normalized, ['1', 'true', 'ok', 'success'], true);
+        }
+
+        return !empty($success);
+    }
+
+    /**
+     * @param array $history
+     * @return array
+     */
+    private function extractHistoryItems(array $history): array
+    {
+        foreach (['data', 'awb_histories', 'history'] as $key) {
+            if (isset($history[$key]) && is_array($history[$key])) {
+                return $history[$key];
+            }
+        }
+
+        return [];
     }
 }

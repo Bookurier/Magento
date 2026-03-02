@@ -14,6 +14,7 @@ class Config
     public const XML_PATH_API_USER = 'carriers/bookurier/api_user';
     public const XML_PATH_API_PWD = 'carriers/bookurier/api_pwd';
     public const XML_PATH_API_KEY = 'carriers/bookurier/api_key';
+    public const XML_PATH_API_ENDPOINT = 'carriers/bookurier/api_endpoint';
     public const XML_PATH_PICKUP_POINT = 'carriers/bookurier/pickup_point';
     public const XML_PATH_SERVICE = 'carriers/bookurier/service';
     public const XML_PATH_PRINT_AWB_MODE = 'carriers/bookurier/print_awb_mode';
@@ -72,6 +73,16 @@ class Config
     public function getApiKey(?int $storeId = null): string
     {
         return (string)$this->scopeConfig->getValue(self::XML_PATH_API_KEY, ScopeInterface::SCOPE_STORE, $storeId);
+    }
+
+    public function getApiEndpoint(?int $storeId = null): string
+    {
+        $value = (string)$this->scopeConfig->getValue(self::XML_PATH_API_ENDPOINT, ScopeInterface::SCOPE_STORE, $storeId);
+        if ($value === '') {
+            return 'https://portal.bookurier.ro';
+        }
+
+        return rtrim($value, '/');
     }
 
     public function getPickupPoint(?int $storeId = null): string

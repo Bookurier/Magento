@@ -75,7 +75,6 @@ class SyncAwbTracking
         $select = $connection->select()
             ->from(['t' => $trackTable], [
                 'awb' => 't.track_number',
-                'track_created_at' => 't.created_at',
             ])
             ->join(['s' => $shipmentTable], 's.entity_id = t.parent_id', [
                 'order_id' => 's.order_id',
@@ -90,9 +89,10 @@ class SyncAwbTracking
             ])
             ->where('t.carrier_code = ?', 'bookurier')
             ->where('t.created_at >= ?', $minCreatedAt)
-            ->where('o.state NOT IN (?)', ['complete', 'closed'])
+            ->where('o.state IN (?)', ['processing'])
             ->where('(bs.last_query_at IS NULL OR bs.last_query_at < ?)', $minQueryAt)
             ->group(['t.track_number', 's.order_id', 'o.store_id', 'bs.last_query_at', 'bs.last_sort_date'])
+            ->order('bs.last_query_at')
             ->limit(self::BATCH_SIZE);
 
         $rows = $connection->fetchAll($select);
@@ -138,8 +138,9 @@ class SyncAwbTracking
             ];
             $latestStatus = null;
 
-            if (!empty($response['success']) && !empty($response['data']) && is_array($response['data'])) {
-                $newItems = $this->filterNewStatuses($response['data'], $lastSortDate);
+            $items = $this->extractHistoryItems($response);
+            if ($this->isHistorySuccess($response) && !empty($items)) {
+                $newItems = $this->filterNewStatuses($items, $lastSortDate);
                 if (!empty($newItems)) {
                     $this->appendOrderComments($orderId, $awb, $newItems);
                     $latest = end($newItems);
@@ -148,7 +149,7 @@ class SyncAwbTracking
                     $update['last_status_id'] = $latest['status_id'] ?? null;
                     $update['last_status_name'] = $latest['status_name'] ?? null;
                 } else {
-                    $latest = $this->getLatestStatus($response['data']);
+                    $latest = $this->getLatestStatus($items);
                     if ($latest !== null) {
                         $latestStatus = $latest;
                         $update['last_sort_date'] = $latest['sort_date'] ?? $lastSortDate;
@@ -317,6 +318,46 @@ class SyncAwbTracking
     }
 
     /**
+     * @param array $history
+     * @return bool
+     */
+    private function isHistorySuccess(array $history): bool
+    {
+        if (!array_key_exists('success', $history)) {
+            return false;
+        }
+
+        $success = $history['success'];
+        if (is_bool($success)) {
+            return $success;
+        }
+        if (is_numeric($success)) {
+            return (int)$success === 1;
+        }
+        if (is_string($success)) {
+            $normalized = strtolower(trim($success));
+            return in_array($normalized, ['1', 'true', 'ok', 'success'], true);
+        }
+
+        return !empty($success);
+    }
+
+    /**
+     * @param array $history
+     * @return array
+     */
+    private function extractHistoryItems(array $history): array
+    {
+        foreach (['data', 'awb_histories', 'history'] as $key) {
+            if (isset($history[$key]) && is_array($history[$key])) {
+                return $history[$key];
+            }
+        }
+
+        return [];
+    }
+
+    /**
      * @param \Magento\Framework\DB\Adapter\AdapterInterface $connection
      * @param string $statusTable
      * @param string $trackTable
@@ -443,7 +484,7 @@ class SyncAwbTracking
             return;
         }
 
-        if (!$order->canClose()) {
+        if ((string)$order->getState() === Order::STATE_CANCELED) {
             return;
         }
 
