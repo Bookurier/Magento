@@ -144,7 +144,7 @@ class MassCreateAwb extends Action
     private function renderQueueSkipSummary(array $items): string
     {
         if (!$items) {
-            return 'no details available';
+            return (string)__('no details available');
         }
 
         $labels = [
@@ -182,7 +182,7 @@ class MassCreateAwb extends Action
             }
             $refs = array_slice(array_values(array_unique(array_filter($refs))), 0, 3);
             $suffix = empty($refs) ? '' : ' [' . implode(', ', $refs) . ']';
-            $parts[] = ($labels[$reason] ?? $reason) . ': ' . $count . $suffix;
+            $parts[] = (string)__($labels[$reason] ?? $reason) . ': ' . $count . $suffix;
         }
 
         return implode('; ', $parts);
@@ -195,7 +195,7 @@ class MassCreateAwb extends Action
     private function renderSyncSkipSummary(array $skippedByReason): string
     {
         if (!$skippedByReason) {
-            return 'no details available';
+            return (string)__('no details available');
         }
 
         $parts = [];
@@ -205,7 +205,7 @@ class MassCreateAwb extends Action
             if (!empty($refs)) {
                 $suffix = ' [' . implode(', ', $refs) . ']';
             }
-            $parts[] = $reason . $suffix;
+            $parts[] = (string)__($reason) . $suffix;
         }
 
         return implode('; ', $parts);

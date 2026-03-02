@@ -28,3 +28,7 @@
 #bookurier_awb_actions-print:before {
     content: "\2399  ";
 }
+
+#bookurier_awb_actions-delete:before {
+    content: "\2715  ";
+}

@@ -42,7 +42,8 @@ class OrderViewButton
 
         $canCreate = $this->authorization->isAllowed('Bookurier_Shipping::awb_create');
         $canPrint = $this->authorization->isAllowed('Bookurier_Shipping::awb_print');
-        if (!$canCreate && !$canPrint) {
+        $canDelete = $this->authorization->isAllowed('Bookurier_Shipping::awb_delete');
+        if (!$canCreate && !$canPrint && !$canDelete) {
             return $result;
         }
 
@@ -75,6 +76,17 @@ class OrderViewButton
             ];
         }
 
+        if ($canDelete && $bookurierAwbShipments > 0) {
+            $deleteUrl = $subject->getUrl('bookurier/order/deleteAwb', ['order_id' => $order->getId()]);
+            $confirm = $subject->escapeJs(__('Are you sure you want to delete the Bookurier AWB?'));
+            $options[] = [
+                'id' => 'delete',
+                'label' => (string)__('Delete Bookurier AWB'),
+                'class' => 'delete',
+                'onclick' => "confirmSetLocation('{$confirm}', '{$deleteUrl}')",
+            ];
+        }
+
         if (!empty($options)) {
             $subject->addButton(
                 'bookurier_awb_actions',
@@ -100,19 +112,6 @@ class OrderViewButton
                         'label' => (string)__('AWB queued'),
                         'disabled' => true,
                     ]],
-                ]
-            );
-        }
-
-        if ($bookurierAwbShipments > 0 && $this->authorization->isAllowed('Bookurier_Shipping::awb_delete')) {
-            $url = $subject->getUrl('bookurier/order/deleteAwb', ['order_id' => $order->getId()]);
-            $confirm = $subject->escapeJs(__('Are you sure you want to delete the Bookurier AWB?'));
-            $subject->addButton(
-                'bookurier_delete_awb',
-                [
-                    'label' => __('Delete Bookurier AWB'),
-                    'class' => 'delete',
-                    'onclick' => "confirmSetLocation('{$confirm}', '{$url}')",
                 ]
             );
         }
