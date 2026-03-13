@@ -74,7 +74,7 @@
                 </field>
                 <field id="api_endpoint" translate="label" type="text" sortOrder="203" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>API Endpoint</label>
-                    <comment>Base endpoint without path, e.g. https://portal.bookurier.ro or http://bookurier.local</comment>
+                    <comment>Base endpoint without path, e.g. https://portal.bookurier.ro</comment>
                     <validate>validate-url</validate>
                 </field>
                 <field id="pickup_point" translate="label" type="text" sortOrder="204" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">

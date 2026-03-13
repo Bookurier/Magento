@@ -14,7 +14,7 @@ use Magento\Sales\Model\Order\Status\HistoryFactory;
 class SyncAwbTracking
 {
     private const BATCH_SIZE = 25;
-    private const MIN_QUERY_INTERVAL_MINUTES = 180;
+    private const MIN_QUERY_INTERVAL_MINUTES = 1;
     private const MAX_AWB_AGE_DAYS = 30;
     private const DELIVERED_STATUS_IDS = [4, 5];
 
