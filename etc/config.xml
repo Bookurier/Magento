@@ -26,6 +26,8 @@
                 <api_key></api_key>
                 <api_endpoint>https://portal.bookurier.ro</api_endpoint>
                 <fulfillment_api_url>https://romania-fulfillment.ro</fulfillment_api_url>
+                <fulfillment_api_user></fulfillment_api_user>
+                <fulfillment_api_pwd></fulfillment_api_pwd>
                 <fulfillment_packtype>1</fulfillment_packtype>
                 <pickup_point>5</pickup_point>
                 <service>9</service>

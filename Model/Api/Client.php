@@ -216,8 +216,8 @@ class Client
     {
         $endpoint = $this->buildFulfillmentEndpoint(self::ENDPOINT_FULFILLMENT_ADD_ORDERS, $storeId);
         $payload = http_build_query([
-            'userid' => $this->config->getApiUser($storeId),
-            'pwd' => $this->config->getApiPassword($storeId),
+            'userid' => $this->config->getFulfillmentApiUser($storeId),
+            'pwd' => $this->config->getFulfillmentApiPassword($storeId),
             'msg' => $messageXml,
         ]);
 

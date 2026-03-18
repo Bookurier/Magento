@@ -15,6 +15,8 @@ class Config
     public const XML_PATH_API_PWD = 'carriers/bookurier/api_pwd';
     public const XML_PATH_API_KEY = 'carriers/bookurier/api_key';
     public const XML_PATH_API_ENDPOINT = 'carriers/bookurier/api_endpoint';
+    public const XML_PATH_FULFILLMENT_API_USER = 'carriers/bookurier/fulfillment_api_user';
+    public const XML_PATH_FULFILLMENT_API_PWD = 'carriers/bookurier/fulfillment_api_pwd';
     public const XML_PATH_PICKUP_POINT = 'carriers/bookurier/pickup_point';
     public const XML_PATH_SERVICE = 'carriers/bookurier/service';
     public const XML_PATH_PRINT_AWB_MODE = 'carriers/bookurier/print_awb_mode';
@@ -59,17 +61,7 @@ class Config
 
     public function getApiPassword(?int $storeId = null): string
     {
-        $value = (string)$this->scopeConfig->getValue(self::XML_PATH_API_PWD, ScopeInterface::SCOPE_STORE, $storeId);
-        if ($value === '' || preg_match('/^\*+$/', $value)) {
-            return '';
-        }
-
-        // Legacy installs may still have plaintext credentials in DB.
-        if (!$this->isEncryptedConfigValue($value)) {
-            return $value;
-        }
-
-        return $this->encryptor->decrypt($value);
+        return $this->getDecryptedConfigValue(self::XML_PATH_API_PWD, $storeId);
     }
 
     public function getApiKey(?int $storeId = null): string
@@ -122,6 +114,20 @@ class Config
         }
 
         return rtrim($value, '/');
+    }
+
+    public function getFulfillmentApiUser(?int $storeId = null): string
+    {
+        return (string)$this->scopeConfig->getValue(
+            self::XML_PATH_FULFILLMENT_API_USER,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getFulfillmentApiPassword(?int $storeId = null): string
+    {
+        return $this->getDecryptedConfigValue(self::XML_PATH_FULFILLMENT_API_PWD, $storeId);
     }
 
     public function getFulfillmentPacktype(?int $storeId = null): int
@@ -204,5 +210,20 @@ class Config
     private function isEncryptedConfigValue(string $value): bool
     {
         return (bool)preg_match('/^\d+:\d+:.+$/', $value);
+    }
+
+    private function getDecryptedConfigValue(string $path, ?int $storeId = null): string
+    {
+        $value = (string)$this->scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE, $storeId);
+        if ($value === '' || preg_match('/^\*+$/', $value)) {
+            return '';
+        }
+
+        // Legacy installs may still have plaintext credentials in DB.
+        if (!$this->isEncryptedConfigValue($value)) {
+            return $value;
+        }
+
+        return $this->encryptor->decrypt($value);
     }
 }
