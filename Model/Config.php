@@ -19,6 +19,8 @@ class Config
     public const XML_PATH_SERVICE = 'carriers/bookurier/service';
     public const XML_PATH_PRINT_AWB_MODE = 'carriers/bookurier/print_awb_mode';
     public const XML_PATH_PRINT_AWB_FORMAT = 'carriers/bookurier/print_awb_format';
+    public const XML_PATH_FULFILLMENT_API_URL = 'carriers/bookurier/fulfillment_api_url';
+    public const XML_PATH_FULFILLMENT_PACKTYPE = 'carriers/bookurier/fulfillment_packtype';
     public const XML_PATH_DEFAULT_PACKS = 'carriers/bookurier/default_packs';
     public const XML_PATH_DEFAULT_WEIGHT = 'carriers/bookurier/default_weight';
     public const XML_PATH_ENABLE_BULK_PRINT_BUTTON = 'carriers/bookurier/enable_bulk_print_button';
@@ -105,6 +107,32 @@ class Config
     {
         $format = (string)$this->scopeConfig->getValue(self::XML_PATH_PRINT_AWB_FORMAT, ScopeInterface::SCOPE_STORE, $storeId);
         return in_array($format, ['pdf', 'html'], true) ? $format : 'pdf';
+    }
+
+    public function getFulfillmentApiUrl(?int $storeId = null): string
+    {
+        $value = (string)$this->scopeConfig->getValue(
+            self::XML_PATH_FULFILLMENT_API_URL,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        if ($value === '') {
+            return $this->getApiEndpoint($storeId);
+        }
+
+        return rtrim($value, '/');
+    }
+
+    public function getFulfillmentPacktype(?int $storeId = null): int
+    {
+        $value = (int)$this->scopeConfig->getValue(
+            self::XML_PATH_FULFILLMENT_PACKTYPE,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return $value > 0 ? $value : 1;
     }
 
     public function getDefaultPacks(?int $storeId = null): int

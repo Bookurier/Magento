@@ -31,6 +31,17 @@
                     </confirm>
                 </settings>
             </action>
+            <action name="bookurier_fulfillment">
+                <settings>
+                    <url path="bookurier/order/massFulfillment"/>
+                    <type>bookurier_fulfillment</type>
+                    <label translate="true">Fulfillment</label>
+                    <confirm>
+                        <title translate="true">Send Fulfillment</title>
+                        <message translate="true">Send fulfillment for selected orders?</message>
+                    </confirm>
+                </settings>
+            </action>
         </massaction>
     </listingToolbar>
     <columns name="sales_order_columns">

@@ -13,6 +13,7 @@
                     <resource id="Bookurier_Shipping::awb_create" title="Create Bookurier AWB" />
                     <resource id="Bookurier_Shipping::awb_delete" title="Delete Bookurier AWB" />
                     <resource id="Bookurier_Shipping::awb_print" title="Print AWB" />
+                    <resource id="Bookurier_Shipping::fulfillment" title="Send Fulfillment" />
                     <resource id="Bookurier_Shipping::tracking_view" title="View Tracking" />
                 </resource>
                 </resource>

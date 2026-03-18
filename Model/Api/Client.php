@@ -14,6 +14,7 @@ class Client
     private const ENDPOINT_ADD_CMDS = '/api/add_cmds.php';
     private const ENDPOINT_PRINT_AWBS = '/api/print_awbs.php';
     private const ENDPOINT_AWB_HISTORY = '/api/awb_history.php';
+    private const ENDPOINT_FULFILLMENT_ADD_ORDERS = '/api/v3/add_orders.php';
 
     /**
      * @var Curl
@@ -206,9 +207,52 @@ class Client
         return $decoded;
     }
 
+    /**
+     * @param string $messageXml
+     * @param int|null $storeId
+     * @return array{status:string,number:string,description:string,raw:string}
+     */
+    public function addFulfillmentOrder(string $messageXml, ?int $storeId = null): array
+    {
+        $endpoint = $this->buildFulfillmentEndpoint(self::ENDPOINT_FULFILLMENT_ADD_ORDERS, $storeId);
+        $payload = http_build_query([
+            'userid' => $this->config->getApiUser($storeId),
+            'pwd' => $this->config->getApiPassword($storeId),
+            'msg' => $messageXml,
+        ]);
+
+        $this->debugLog('fulfillment_request', [
+            'endpoint' => $endpoint,
+            'body' => $this->maskFulfillmentBody($payload),
+        ]);
+
+        $this->curl->setOption(CURLOPT_RETURNTRANSFER, true);
+        $this->curl->setOption(CURLOPT_TIMEOUT, 30);
+        $this->curl->setHeaders(['Content-Type' => 'application/x-www-form-urlencoded']);
+        $this->curl->post($endpoint, $payload);
+
+        $responseBody = (string)$this->curl->getBody();
+        $this->debugLog('fulfillment_response', [
+            'status' => $this->curl->getStatus(),
+            'body' => $responseBody,
+        ]);
+
+        $parsedResponse = $this->parseFulfillmentResponse($responseBody);
+        $this->debugLog('fulfillment_response_parsed', $parsedResponse);
+
+        return $parsedResponse;
+    }
+
     private function buildEndpoint(string $path, ?int $storeId = null): string
     {
         $baseEndpoint = $this->config->getApiEndpoint($storeId);
+
+        return rtrim($baseEndpoint, '/') . $path;
+    }
+
+    private function buildFulfillmentEndpoint(string $path, ?int $storeId = null): string
+    {
+        $baseEndpoint = $this->config->getFulfillmentApiUrl($storeId);
 
         return rtrim($baseEndpoint, '/') . $path;
     }
@@ -259,5 +303,50 @@ class Client
             $decoded['pwd'] = '***';
         }
         return json_encode($decoded);
+    }
+
+    /**
+     * @param string $responseBody
+     * @return array{status:string,number:string,description:string,raw:string}
+     */
+    private function parseFulfillmentResponse(string $responseBody): array
+    {
+        $responseBody = trim($responseBody);
+        if ($responseBody === '') {
+            return [
+                'status' => 'Error',
+                'number' => '',
+                'description' => 'Empty response from Bookurier fulfillment API.',
+                'raw' => '',
+            ];
+        }
+
+        libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($responseBody);
+        libxml_clear_errors();
+        if ($xml === false) {
+            return [
+                'status' => 'Error',
+                'number' => '',
+                'description' => 'Invalid XML response from Bookurier fulfillment API.',
+                'raw' => $responseBody,
+            ];
+        }
+
+        return [
+            'status' => (string)($xml->status ?? 'Error'),
+            'number' => (string)($xml->number ?? ''),
+            'description' => (string)($xml->description ?? ''),
+            'raw' => $responseBody,
+        ];
+    }
+
+    /**
+     * @param string $body
+     * @return string
+     */
+    private function maskFulfillmentBody(string $body): string
+    {
+        return preg_replace('/(pwd=)[^&]*/', '$1***', $body) ?: $body;
     }
 }

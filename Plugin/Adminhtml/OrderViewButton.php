@@ -43,22 +43,20 @@ class OrderViewButton
         $canCreate = $this->authorization->isAllowed('Bookurier_Shipping::awb_create');
         $canPrint = $this->authorization->isAllowed('Bookurier_Shipping::awb_print');
         $canDelete = $this->authorization->isAllowed('Bookurier_Shipping::awb_delete');
-        if (!$canCreate && !$canPrint && !$canDelete) {
+        $canFulfillment = $this->authorization->isAllowed('Bookurier_Shipping::fulfillment');
+        if (!$canCreate && !$canPrint && !$canDelete && !$canFulfillment) {
             return $result;
         }
 
         $stats = $this->getShipmentAwbStats($order);
         $bookurierAwbShipments = $stats['bookurier'];
         $shipmentsWithoutAwb = $stats['without_awb'];
-
-        // Hide Bookurier actions when all shipments already have non-Bookurier AWBs.
-        if ($bookurierAwbShipments === 0 && $shipmentsWithoutAwb === 0) {
-            return $result;
-        }
+        $hasAnyAwb = $stats['any_awb'] > 0;
+        $hasEligibleFulfillment = $stats['fulfillment_ready'] > 0;
 
         $options = [];
 
-        if ($canCreate && $shipmentsWithoutAwb > 0) {
+        if ($canCreate && !$hasAnyAwb && $shipmentsWithoutAwb > 0) {
             $url = $subject->getUrl('bookurier/order/awbform', ['order_id' => $order->getId()]);
             $options[] = [
                 'id' => 'create',
@@ -73,6 +71,15 @@ class OrderViewButton
                 'id' => 'print',
                 'label' => (string)__('Print AWB'),
                 'onclick' => "window.open('{$printUrl}', '_blank')",
+            ];
+        }
+
+        if ($canFulfillment && $hasEligibleFulfillment) {
+            $fulfillmentUrl = $subject->getUrl('bookurier/order/fulfillment', ['order_id' => $order->getId()]);
+            $options[] = [
+                'id' => 'fulfillment',
+                'label' => (string)__('Fulfillment'),
+                'onclick' => "setLocation('{$fulfillmentUrl}')",
             ];
         }
 
@@ -91,7 +98,7 @@ class OrderViewButton
             $subject->addButton(
                 'bookurier_awb_actions',
                 [
-                    'label' => __('Bookurier AWB'),
+                    'label' => __('Bookurier'),
                     'class_name' => SplitButton::class,
                     'class' => 'bookurier-awb-main',
                     'button_class' => 'bookurier-awb-main',
@@ -102,7 +109,7 @@ class OrderViewButton
             $subject->addButton(
                 'bookurier_awb_actions',
                 [
-                    'label' => __('Bookurier AWB'),
+                    'label' => __('Bookurier'),
                     'class_name' => SplitButton::class,
                     'class' => 'bookurier-awb-main',
                     'button_class' => 'bookurier-awb-main',
@@ -121,16 +128,21 @@ class OrderViewButton
 
     /**
      * @param \Magento\Sales\Api\Data\OrderInterface $order
-     * @return array{bookurier:int,without_awb:int}
+     * @return array{bookurier:int,without_awb:int,any_awb:int,fulfillment_ready:int}
      */
     private function getShipmentAwbStats($order): array
     {
         $bookurier = 0;
         $withoutAwb = 0;
+        $anyAwb = 0;
+        $fulfillmentReady = 0;
         foreach ($order->getShipmentsCollection() as $shipment) {
             $hasAnyAwb = false;
             $hasBookurierAwb = false;
             foreach ($shipment->getTracksCollection() as $track) {
+                if (!(string)$track->getTrackNumber()) {
+                    continue;
+                }
                 $hasAnyAwb = true;
                 if ((string)$track->getCarrierCode() === 'bookurier') {
                     $hasBookurierAwb = true;
@@ -138,6 +150,10 @@ class OrderViewButton
             }
             if ($hasBookurierAwb) {
                 $bookurier++;
+            }
+            if ($hasAnyAwb) {
+                $anyAwb++;
+                $fulfillmentReady++;
             }
             if (!$hasAnyAwb) {
                 $withoutAwb++;
@@ -147,6 +163,8 @@ class OrderViewButton
         return [
             'bookurier' => $bookurier,
             'without_awb' => $withoutAwb,
+            'any_awb' => $anyAwb,
+            'fulfillment_ready' => $fulfillmentReady,
         ];
     }
 }
