@@ -4,9 +4,10 @@
  */
 namespace Bookurier\Shipping\Model\Fulfillment;
 
-use Bookurier\Shipping\Model\Api\Client;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Api\Data\OrderInterface;
+use Magento\Sales\Model\Order;
 
 class Processor
 {
@@ -16,27 +17,34 @@ class Processor
     private $payloadBuilder;
 
     /**
-     * @var Client
+     * @var ApiClient
      */
     private $client;
 
+    /**
+     * @var OrderRepositoryInterface
+     */
+    private $orderRepository;
+
     public function __construct(
         PayloadBuilder $payloadBuilder,
-        Client $client
+        ApiClient $client,
+        OrderRepositoryInterface $orderRepository
     ) {
         $this->payloadBuilder = $payloadBuilder;
         $this->client = $client;
+        $this->orderRepository = $orderRepository;
     }
 
     /**
      * @param OrderInterface $order
-     * @return array{shipment_label:string,awb:string,courier:string,number:string}
+     * @return array{courier:string,number:string}
      * @throws LocalizedException
      */
     public function process(OrderInterface $order): array
     {
         $payload = $this->payloadBuilder->build($order);
-        $response = $this->client->addFulfillmentOrder($payload['message_xml'], (int)$order->getStoreId());
+        $response = $this->client->addOrder($payload['message_xml'], (int)$order->getStoreId());
         if (strcasecmp((string)($response['status'] ?? ''), 'Ok') !== 0) {
             $description = trim((string)($response['description'] ?? ''));
             if ($description === '') {
@@ -46,11 +54,31 @@ class Processor
             throw new LocalizedException(__($description));
         }
 
+        $this->addSuccessComment($order, (string)($response['number'] ?? ''), $payload['courier']);
+
         return [
-            'shipment_label' => $payload['shipment_label'],
-            'awb' => $payload['awb'],
             'courier' => $payload['courier'],
             'number' => (string)($response['number'] ?? ''),
         ];
+    }
+
+    /**
+     * @param OrderInterface $order
+     * @param string $reference
+     * @param string $courier
+     * @return void
+     */
+    private function addSuccessComment(OrderInterface $order, string $reference, string $courier): void
+    {
+        if (!$order instanceof Order) {
+            return;
+        }
+
+        $comment = $reference !== ''
+            ? (string)__('Bookurier fulfillment created. Reference: %1. Courier: %2.', $reference, $courier)
+            : (string)__('Bookurier fulfillment created. Courier: %1.', $courier);
+
+        $order->addCommentToStatusHistory($comment);
+        $this->orderRepository->save($order);
     }
 }

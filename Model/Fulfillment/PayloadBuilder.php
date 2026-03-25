@@ -4,14 +4,13 @@
  */
 namespace Bookurier\Shipping\Model\Fulfillment;
 
-use Bookurier\Shipping\Model\Config;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Directory\Model\CountryFactory;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Api\Data\OrderAddressInterface;
 use Magento\Sales\Api\Data\OrderInterface;
+use Magento\Sales\Api\Data\OrderItemInterface;
 use Magento\Sales\Api\Data\ShipmentInterface;
-use Magento\Sales\Api\Data\ShipmentTrackInterface;
 
 class PayloadBuilder
 {
@@ -41,10 +40,10 @@ class PayloadBuilder
     }
 
     /**
-     * Build the fulfillment XML message for all shipments on the order.
+     * Build the fulfillment XML message from order-level data.
      *
      * @param OrderInterface $order
-     * @return array{message_xml:string,shipment_label:string,awb:string,courier:string}
+     * @return array{message_xml:string,courier:string}
      * @throws LocalizedException
      */
     public function build(OrderInterface $order): array
@@ -54,17 +53,12 @@ class PayloadBuilder
             throw new LocalizedException(__('Order has no shipping address.'));
         }
 
-        $shipments = $this->getEligibleShipments($order);
-        $tracks = $this->getEligibleTracks($shipments);
-        $products = $this->buildProducts($shipments, (int)$order->getStoreId());
+        $products = $this->buildProducts($order, (int)$order->getStoreId());
         if (!$products) {
-            throw new LocalizedException(__('Order shipment has no fulfillable products.'));
+            throw new LocalizedException(__('Order has no fulfillable products.'));
         }
 
-        $courier = $this->resolveCourier(reset($tracks));
-        $awb = implode(', ', array_map(static function (ShipmentTrackInterface $track): string {
-            return trim((string)$track->getTrackNumber());
-        }, $tracks));
+        $courier = $this->resolveCourier($order);
 
         $document = new \DOMDocument('1.0', 'UTF-8');
         $document->formatOutput = false;
@@ -89,11 +83,11 @@ class PayloadBuilder
             $document,
             $orderNode,
             'packtype',
-            (string)$this->config->getFulfillmentPacktype((int)$order->getStoreId())
+            (string)$this->config->getPacktype((int)$order->getStoreId())
         );
         $this->appendNode($document, $orderNode, 'exchange_pack', '0');
         $this->appendNode($document, $orderNode, 'courier', $courier);
-        $this->appendNode($document, $orderNode, 'awb', $awb);
+        $this->appendNode($document, $orderNode, 'awb', $this->resolveAwb($order));
         $this->appendNode($document, $orderNode, 'obs', '');
         $this->appendNode($document, $orderNode, 'invoice_url', '');
 
@@ -106,97 +100,42 @@ class PayloadBuilder
 
         return [
             'message_xml' => $document->saveXML($msgNode),
-            'shipment_label' => implode(', ', array_map([$this, 'getShipmentLabel'], $shipments)),
-            'awb' => $awb,
             'courier' => $courier,
         ];
     }
 
     /**
      * @param OrderInterface $order
-     * @return ShipmentInterface[]
-     * @throws LocalizedException
-     */
-    private function getEligibleShipments(OrderInterface $order): array
-    {
-        $shipments = [];
-        foreach ($order->getShipmentsCollection() as $shipment) {
-            if (!$shipment->getId()) {
-                continue;
-            }
-
-            $shipments[] = $shipment;
-        }
-
-        if (!$shipments) {
-            throw new LocalizedException(__('Order has no shipment with an AWB code.'));
-        }
-
-        return $shipments;
-    }
-
-    /**
-     * @param ShipmentInterface[] $shipments
-     * @return ShipmentTrackInterface[]
-     * @throws LocalizedException
-     */
-    private function getEligibleTracks(array $shipments): array
-    {
-        $tracks = [];
-        foreach ($shipments as $shipment) {
-            $shipmentTrack = null;
-            foreach ($shipment->getTracksCollection() as $track) {
-                if (trim((string)$track->getTrackNumber()) !== '') {
-                    $shipmentTrack = $track;
-                    break;
-                }
-            }
-            if ($shipmentTrack === null) {
-                throw new LocalizedException(
-                    __('Shipment %1 has no AWB code.', $this->getShipmentLabel($shipment))
-                );
-            }
-            $tracks[] = $shipmentTrack;
-        }
-
-        return $tracks;
-    }
-
-    /**
-     * @param ShipmentInterface[] $shipments
      * @param int $storeId
      * @return array<int,array{barcode:string,quantity:string}>
      * @throws LocalizedException
      */
-    private function buildProducts(array $shipments, int $storeId): array
+    private function buildProducts(OrderInterface $order, int $storeId): array
     {
         $items = [];
-        foreach ($shipments as $shipment) {
-            foreach ($shipment->getItemsCollection() as $shipmentItem) {
-                $orderItem = $shipmentItem->getOrderItem();
-                if (!$orderItem || $orderItem->isDummy()) {
-                    continue;
-                }
-
-                $productId = (int)$shipmentItem->getProductId();
-                $qty = (float)$shipmentItem->getQty();
-                if ($productId <= 0 || $qty <= 0) {
-                    continue;
-                }
-
-                $product = $this->productRepository->getById($productId, false, $storeId);
-                $barcode = trim((string)$product->getData('ean'));
-                if ($barcode === '') {
-                    throw new LocalizedException(
-                        __('Product "%1" is missing EAN and cannot be sent to fulfillment.', $orderItem->getName())
-                    );
-                }
-
-                $items[] = [
-                    'barcode' => $barcode,
-                    'quantity' => $this->formatQuantity($qty),
-                ];
+        foreach ($order->getAllVisibleItems() as $orderItem) {
+            if (!$orderItem instanceof OrderItemInterface || $orderItem->isDummy()) {
+                continue;
             }
+
+            $productId = (int)$orderItem->getProductId();
+            $qty = (float)$orderItem->getQtyOrdered();
+            if ($productId <= 0 || $qty <= 0) {
+                continue;
+            }
+
+            $product = $this->productRepository->getById($productId, false, $storeId);
+            $barcode = trim((string)$product->getData('ean'));
+            if ($barcode === '') {
+                throw new LocalizedException(
+                    __('Product "%1" is missing EAN and cannot be sent to fulfillment.', $orderItem->getName())
+                );
+            }
+
+            $items[] = [
+                'barcode' => $barcode,
+                'quantity' => $this->formatQuantity($qty),
+            ];
         }
 
         return $items;
@@ -279,36 +218,56 @@ class PayloadBuilder
     }
 
     /**
-     * @param ShipmentTrackInterface $track
+     * @param OrderInterface $order
      * @return string
+     * @throws LocalizedException
      */
-    private function resolveCourier(ShipmentTrackInterface $track): string
+    private function resolveCourier(OrderInterface $order): string
     {
-        $title = trim((string)$track->getTitle());
-        if ($title !== '') {
-            return $title;
+        $storeId = (int)$order->getStoreId();
+        $override = $this->config->getCourierOverride($storeId);
+        if ($override !== '') {
+            return $override;
         }
 
-        $carrierCode = trim((string)$track->getCarrierCode());
-        if ($carrierCode !== '') {
-            return $carrierCode;
+        $description = trim((string)$order->getShippingDescription());
+        if ($description !== '') {
+            return $description;
         }
 
-        return 'Bookurier';
+        throw new LocalizedException(__('Order is missing shipping description and no fulfillment courier override is configured.'));
     }
 
     /**
-     * @param ShipmentInterface $shipment
+     * Return all Bookurier AWB track numbers on the order as a comma-separated string.
+     *
+     * @param OrderInterface $order
      * @return string
      */
-    private function getShipmentLabel(ShipmentInterface $shipment): string
+    private function resolveAwb(OrderInterface $order): string
     {
-        $incrementId = trim((string)$shipment->getIncrementId());
-        if ($incrementId !== '') {
-            return $incrementId;
+        $awbCodes = [];
+
+        foreach ($order->getShipmentsCollection() as $shipment) {
+            if (!$shipment instanceof ShipmentInterface) {
+                continue;
+            }
+
+            foreach ($shipment->getTracksCollection() as $track) {
+                if ((string)$track->getCarrierCode() !== 'bookurier') {
+                    continue;
+                }
+
+                $awbCode = trim((string)$track->getTrackNumber());
+                if ($awbCode === '') {
+                    continue;
+                }
+
+                $awbCodes[] = $awbCode;
+            }
         }
 
-        return '#' . (int)$shipment->getId();
+        return implode(',', array_unique($awbCodes));
     }
 
     /**

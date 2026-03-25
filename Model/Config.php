@@ -17,6 +17,7 @@ class Config
     public const XML_PATH_API_ENDPOINT = 'carriers/bookurier/api_endpoint';
     public const XML_PATH_FULFILLMENT_API_USER = 'carriers/bookurier/fulfillment_api_user';
     public const XML_PATH_FULFILLMENT_API_PWD = 'carriers/bookurier/fulfillment_api_pwd';
+    public const XML_PATH_FULFILLMENT_COURIER_OVERRIDE = 'carriers/bookurier/fulfillment_courier_override';
     public const XML_PATH_PICKUP_POINT = 'carriers/bookurier/pickup_point';
     public const XML_PATH_SERVICE = 'carriers/bookurier/service';
     public const XML_PATH_PRINT_AWB_MODE = 'carriers/bookurier/print_awb_mode';
@@ -139,6 +140,15 @@ class Config
         );
 
         return $value > 0 ? $value : 1;
+    }
+
+    public function getFulfillmentCourierOverride(?int $storeId = null): string
+    {
+        return trim((string)$this->scopeConfig->getValue(
+            self::XML_PATH_FULFILLMENT_COURIER_OVERRIDE,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        ));
     }
 
     public function getDefaultPacks(?int $storeId = null): int
