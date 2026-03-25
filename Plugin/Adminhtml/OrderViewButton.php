@@ -34,12 +34,6 @@ class OrderViewButton
             return $result;
         }
 
-        $shipments = $order->getShipmentsCollection();
-        $totalShipments = (int)$shipments->getSize();
-        if ($totalShipments === 0) {
-            return $result;
-        }
-
         $canCreate = $this->authorization->isAllowed('Bookurier_Shipping::awb_create');
         $canPrint = $this->authorization->isAllowed('Bookurier_Shipping::awb_print');
         $canDelete = $this->authorization->isAllowed('Bookurier_Shipping::awb_delete');
@@ -52,7 +46,7 @@ class OrderViewButton
         $bookurierAwbShipments = $stats['bookurier'];
         $shipmentsWithoutAwb = $stats['without_awb'];
         $hasAnyAwb = $stats['any_awb'] > 0;
-        $hasEligibleFulfillment = $stats['fulfillment_ready'] > 0;
+        $hasEligibleFulfillment = $this->canSendFulfillment($order);
 
         $options = [];
 
@@ -124,6 +118,26 @@ class OrderViewButton
         }
 
         return $result;
+    }
+
+    /**
+     * @param \Magento\Sales\Api\Data\OrderInterface $order
+     * @return bool
+     */
+    private function canSendFulfillment($order): bool
+    {
+        $shippingAddress = $order->getShippingAddress();
+        if (!$shippingAddress || !$shippingAddress->getId()) {
+            return false;
+        }
+
+        foreach ($order->getAllVisibleItems() as $item) {
+            if (!$item->isDummy() && (float)$item->getQtyOrdered() > 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

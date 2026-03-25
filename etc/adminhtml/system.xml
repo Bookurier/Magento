@@ -108,24 +108,28 @@
                     <label>Fulfillment Packtype</label>
                     <validate>validate-digits</validate>
                 </field>
-                <field id="default_packs" translate="label" type="text" sortOrder="212" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                <field id="fulfillment_courier_override" translate="label" type="text" sortOrder="212" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Fulfillment Courier Override</label>
+                    <comment>Leave empty to use the order shipping description.</comment>
+                </field>
+                <field id="default_packs" translate="label" type="text" sortOrder="213" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Default Packs</label>
                     <validate>validate-number validate-zero-or-greater</validate>
                 </field>
-                <field id="default_weight" translate="label" type="text" sortOrder="213" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                <field id="default_weight" translate="label" type="text" sortOrder="214" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Default Weight (kg)</label>
                     <validate>validate-number validate-zero-or-greater</validate>
                 </field>
-                <field id="api_mock" translate="label" type="select" sortOrder="214" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                <field id="api_mock" translate="label" type="select" sortOrder="215" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Mock API Response</label>
                     <comment>Return a simulated success response without calling Bookurier.</comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="enable_bulk_print_button" translate="label" type="select" sortOrder="215" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                <field id="enable_bulk_print_button" translate="label" type="select" sortOrder="216" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Enable Order Grid Print Button</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="notify_customer_on_awb_create" translate="label" type="select" sortOrder="216" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                <field id="notify_customer_on_awb_create" translate="label" type="select" sortOrder="217" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Notify Customer on AWB Creation</label>
                     <comment>Send Magento shipment email when a Bookurier AWB is attached to a shipment.</comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>

@@ -58,7 +58,7 @@ class Fulfillment extends Action
                 );
             } else {
                 $this->messageManager->addSuccessMessage(
-                    __('Fulfillment sent for shipment %1.', $result['shipment_label'])
+                    __('Fulfillment sent using courier %1.', $result['courier'])
                 );
             }
         } catch (LocalizedException $e) {
