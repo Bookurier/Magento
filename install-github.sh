@@ -5,7 +5,7 @@ set -euo pipefail
 # Bootstrap installer intended to be executed from the Magento root,
 # either after downloading this file or directly from the GitHub raw URL.
 
-REPO_URL="${BOOKURIER_REPO_URL:-https://github.com/scarpelius/Shipping.git}"
+REPO_URL="${BOOKURIER_REPO_URL:-https://github.com/Bookurier/Magento}"
 BRANCH="${BOOKURIER_BRANCH:-main}"
 MAGENTO_ROOT="${1:-$(pwd)}"
 MODULE_DIR="${MAGENTO_ROOT}/app/code/Bookurier/Shipping"
